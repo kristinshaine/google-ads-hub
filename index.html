@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PWMP Ops Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0d0f12;
+  --surface:   #13161b;
+  --surface2:  #1a1e26;
+  --border:    #252a35;
+  --border2:   #2f3545;
+  --text:      #e8eaf0;
+  --muted:     #7a8099;
+  --accent:    #4f8ef7;
+  --accent2:   #2563d4;
+  --green:     #22c55e;
+  --yellow:    #f59e0b;
+  --red:       #ef4444;
+  --teal:      #14b8a6;
+  --purple:    #a78bfa;
+  --font:      'Syne', sans-serif;
+  --mono:      'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-mark {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.logo-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.logo-sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  font-family: var(--mono);
+}
+nav { padding: 12px 10px; flex: 1; }
+.nav-section {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding: 12px 10px 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active {
+  background: rgba(79,142,247,0.12);
+  color: var(--accent);
+  border-color: rgba(79,142,247,0.2);
+}
+.nav-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.8; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--surface2);
+  color: var(--muted);
+  font-size: 10px;
+  font-family: var(--mono);
+  padding: 1px 6px;
+  border-radius: 20px;
+}
+.nav-item.active .nav-badge { background: rgba(79,142,247,0.2); color: var(--accent); }
+.nav-item.coming {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.nav-item.coming:hover { background: transparent; color: var(--muted); }
+.coming-pill {
+  margin-left: auto;
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--yellow);
+  background: rgba(245,158,11,0.1);
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(245,158,11,0.2);
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+}
+.sync-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.sync-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.sync-dot.error { background: var(--red); }
+.sync-dot.loading {
+  background: var(--yellow);
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── MAIN ── */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+.topbar {
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.page-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.page-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover { border-color: var(--border2); background: var(--border); }
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn svg { width: 13px; height: 13px; }
+
+/* ── CONTENT AREA ── */
+#content { padding: 24px 28px; flex: 1; }
+
+/* ── STAT CARDS ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--mono);
+  line-height: 1;
+}
+.stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+.stat-card.accent-green { border-color: rgba(34,197,94,0.2); }
+.stat-card.accent-green .stat-value { color: var(--green); }
+.stat-card.accent-yellow { border-color: rgba(245,158,11,0.2); }
+.stat-card.accent-yellow .stat-value { color: var(--yellow); }
+.stat-card.accent-red { border-color: rgba(239,68,68,0.2); }
+.stat-card.accent-red .stat-value { color: var(--red); }
+.stat-card.accent-blue { border-color: rgba(79,142,247,0.2); }
+.stat-card.accent-blue .stat-value { color: var(--accent); }
+
+/* ── SEARCH + FILTER BAR ── */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-wrap {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+.search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  color: var(--muted);
+}
+.search-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px 8px 36px;
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus { border-color: var(--accent); }
+select.filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: var(--font);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a8099'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.15s;
+}
+select.filter-select:focus { border-color: var(--accent); }
+select.filter-select option { background: var(--surface2); }
+
+/* ── CONFLICT ALERT BANNER ── */
+.conflict-banner {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  display: none;
+}
+.conflict-banner.show { display: flex; }
+.conflict-icon { color: var(--red); flex-shrink: 0; margin-top: 1px; }
+.conflict-title { font-size: 13px; font-weight: 600; color: var(--red); margin-bottom: 4px; }
+.conflict-body { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.conflict-accounts { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+.conflict-pill {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--red);
+}
+
+/* ── TABLE ── */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.table-header-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.table-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.table-count { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.tbl th:hover { color: var(--text); }
+.tbl th .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+.tbl th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+.tbl td {
+  padding: 11px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+}
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tbody tr { transition: background 0.1s; }
+.tbl tbody tr:hover { background: var(--surface2); }
+.tbl tbody tr.highlight { background: rgba(239,68,68,0.05); }
+
+.account-name { font-weight: 600; font-size: 13px; color: var(--text); }
+.account-cid { font-size: 10px; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+.city-cell { font-size: 12px; }
+.state-pill {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-active    { background: rgba(34,197,94,0.12);  color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.status-paused    { background: rgba(245,158,11,0.12); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+.status-offboarded{ background: rgba(239,68,68,0.1);  color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+.status-unknown   { background: var(--surface2); color: var(--muted); border: 1px solid var(--border2); }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.services-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+.svc-tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+.svc-google { background: rgba(79,142,247,0.12); color: var(--accent); border: 1px solid rgba(79,142,247,0.2); }
+.svc-seo    { background: rgba(167,139,250,0.12); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+.svc-lsa    { background: rgba(20,184,166,0.12); color: var(--teal); border: 1px solid rgba(20,184,166,0.2); }
+
+.launch-cell { font-size: 12px; font-family: var(--mono); }
+
+/* ── LOADING / EMPTY STATES ── */
+.loading-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; font-family: var(--mono); }
+.loading-sub { font-size: 11px; margin-top: 4px; opacity: 0.6; }
+
+.empty-state {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── ERROR STATE ── */
+.error-banner {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 12px;
+  color: var(--red);
+  font-family: var(--mono);
+  display: none;
+}
+.error-banner.show { display: block; }
+
+/* ── SETTINGS VIEW ── */
+#view-settings { display: none; }
+#view-settings.active { display: block; }
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  max-width: 600px;
+}
+.settings-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.settings-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: var(--mono);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus { border-color: var(--accent); }
+.field-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.save-banner {
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 12px;
+  display: none;
+}
+.save-banner.show { display: block; }
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── PHASE 2 PLACEHOLDER ── */
+.phase2-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+  color: var(--muted);
+}
+.phase2-icon {
+  width: 56px; height: 56px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phase2-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.phase2-desc { font-size: 13px; max-width: 360px; line-height: 1.6; }
+.phase2-pill {
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.2);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: var(--mono);
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  #sidebar { display: none; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<div id="sidebar">
+  <div class="logo">
+    <div class="logo-mark">PWMP</div>
+    <div class="logo-name">Ops Hub</div>
+    <div class="logo-sub">v1.0 · Phase 1</div>
+  </div>
+  <nav>
+    <div class="nav-section">Client Intelligence</div>
+    <div class="nav-item active" onclick="showView('clients')" id="nav-clients">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="3" width="14" height="11" rx="2"/>
+        <path d="M1 7h14"/>
+        <path d="M5 3V2M11 3V2"/>
+      </svg>
+      Client list
+      <span class="nav-badge" id="nav-count">—</span>
+    </div>
+    <div class="nav-item" onclick="showView('onboarding')" id="nav-onboarding">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="6"/>
+        <path d="M8 5v3l2 2"/>
+      </svg>
+      Onboarding check
+    </div>
+
+    <div class="nav-section">Campaign Ops</div>
+    <div class="nav-item coming" title="Phase 2">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 8h10M3 4h10M3 12h6"/>
+      </svg>
+      New campaigns
+      <span class="coming-pill">Soon</span>
+    </div>
+    <div class="nav-item coming" title="Phase 2">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 2l1.5 4h4l-3.2 2.4 1.2 4L8 10l-3.5 2.4 1.2-4L2.5 6h4z" stroke-linejoin="round"/>
+      </svg>
+      30 conv. alerts
+      <span class="coming-pill">Soon</span>
+    </div>
+    <div class="nav-item coming" title="Phase 2">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M8 2a4 4 0 014 4v3l1 2H3l1-2V6a4 4 0 014-4z"/>
+        <path d="M6.5 13a1.5 1.5 0 003 0"/>
+      </svg>
+      ClickUp alerts
+      <span class="coming-pill">Soon</span>
+    </div>
+
+    <div class="nav-section">System</div>
+    <div class="nav-item" onclick="showView('settings')" id="nav-settings">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="8" cy="8" r="2.5"/>
+        <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
+      </svg>
+      Settings
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Not synced</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN ══════════ -->
+<div id="main">
+
+  <!-- ── VIEW: CLIENT LIST ── -->
+  <div id="view-clients" class="view active">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Client list</div>
+        <div class="page-sub">All accounts · Google Ads MCC + ClickUp</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" onclick="exportCSV()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 12h10"/></svg>
+          Export CSV
+        </button>
+        <button class="btn primary" onclick="syncNow()" id="sync-btn">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 009.9-1M13 8a5 5 0 01-9.9 1"/><path d="M11 5l2 2-2 2M5 9l-2 2 2 2"/></svg>
+          Sync now
+        </button>
+      </div>
+    </div>
+    <div id="content">
+      <div class="stats-row">
+        <div class="stat-card accent-blue">
+          <div class="stat-label">Total accounts</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-sub">in ClickUp list</div>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-label">Active</div>
+          <div class="stat-value" id="stat-active">—</div>
+          <div class="stat-sub">currently running</div>
+        </div>
+        <div class="stat-card accent-yellow">
+          <div class="stat-label">Paused</div>
+          <div class="stat-value" id="stat-paused">—</div>
+          <div class="stat-sub">temporarily off</div>
+        </div>
+        <div class="stat-card accent-red">
+          <div class="stat-label">Offboarded</div>
+          <div class="stat-value" id="stat-offboard">—</div>
+          <div class="stat-sub">no longer active</div>
+        </div>
+      </div>
+
+      <div class="error-banner" id="error-banner"></div>
+
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg>
+          <input type="text" class="search-input" placeholder="Search accounts, cities, states…" id="search-input" oninput="filterTable()">
+        </div>
+        <select class="filter-select" id="filter-status" onchange="filterTable()">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="offboarded">Offboarded</option>
+        </select>
+        <select class="filter-select" id="filter-service" onchange="filterTable()">
+          <option value="">All services</option>
+          <option value="Google Ads">Google Ads</option>
+          <option value="SEO">SEO</option>
+          <option value="LSA">LSA</option>
+        </select>
+        <select class="filter-select" id="filter-state" onchange="filterTable()">
+          <option value="">All states</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header-row">
+          <span class="table-title">Accounts</span>
+          <span class="table-count" id="table-count">Loading…</span>
+        </div>
+        <div id="table-container">
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <div class="loading-text">Connecting to ClickUp…</div>
+            <div class="loading-sub">First load may take a few seconds</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIEW: ONBOARDING CHECK ── -->
+  <div id="view-onboarding" class="view">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Onboarding conflict check</div>
+        <div class="page-sub">Search a city before adding a new client</div>
+      </div>
+    </div>
+    <div id="content-onboarding" style="padding: 24px 28px;">
+      <div style="max-width: 640px;">
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+          <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">City conflict checker</div>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 20px;">Type a city name to see all existing accounts targeting that market.</div>
+          <div class="search-wrap" style="margin-bottom: 12px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted)"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg>
+            <input type="text" class="search-input" placeholder="e.g. Austin, Dallas, Orlando…" id="onboard-search" oninput="checkConflict()" style="font-size:14px; padding: 11px 12px 11px 36px;">
+          </div>
+          <div id="conflict-results"></div>
+        </div>
+
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
+          <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">How to use</div>
+          <div style="font-size: 12px; color: var(--muted); line-height: 1.8;">
+            1. During onboarding, type the prospect's target city above.<br>
+            2. If existing active accounts appear → discuss territory with your team before proceeding.<br>
+            3. Paused/offboarded accounts in the same city are shown as low-risk (gray).<br>
+            4. No results → city is clear to onboard.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIEW: SETTINGS ── -->
+  <div id="view-settings" class="view">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Settings</div>
+        <div class="page-sub">API credentials and configuration</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn primary" onclick="saveSettings()">Save & reconnect</button>
+      </div>
+    </div>
+    <div style="padding: 24px 28px;">
+      <div class="settings-card">
+        <div class="settings-title">ClickUp</div>
+        <div class="settings-sub">Connect to your Client Health list to pull account data.</div>
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="s-clickup-key" placeholder="pk_xxxxxxxx…">
+          <div class="field-hint">Found in ClickUp → Profile → Apps → API Token</div>
+        </div>
+        <div class="field">
+          <label>Client Health List ID</label>
+          <input type="text" id="s-clickup-list" placeholder="901802918901">
+          <div class="field-hint">From your ClickUp URL: /v/li/<strong>THIS_NUMBER</strong></div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">Google Ads MCC</div>
+        <div class="settings-sub">Pull account CIDs and statuses from your manager account.</div>
+        <div class="field">
+          <label>Developer Token</label>
+          <input type="password" id="s-ads-token" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx">
+        </div>
+        <div class="field">
+          <label>MCC ID (no hyphens)</label>
+          <input type="text" id="s-ads-mcc" placeholder="7917072266">
+        </div>
+        <div style="font-size: 11px; color: var(--yellow); background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 10px 12px; margin-top: 4px;">
+          Note: Google Ads API requires OAuth for browser-based access. The MCC pull is handled via ClickUp data in Phase 1. Full Google Ads API integration comes in Phase 2 with a backend proxy.
+        </div>
+      </div>
+
+      <div id="save-banner" class="save-banner">Settings saved. Reloading data…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CONFIG — loaded from localStorage or defaults
+// ══════════════════════════════════════════════════
+const DEFAULTS = {
+  clickupKey:  'pk_42384668_IJE0BQIVIVIDDS6ZGRBOKY2QF7VAJX1G',
+  clickupList: '901802918901',
+  adsToken:    '4wOu9BrynVN9N6iTdpw9zw',
+  adsMcc:      '7917072266',
+};
+
+function getCfg() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('pwmp_cfg') || '{}');
+    return { ...DEFAULTS, ...saved };
+  } catch { return { ...DEFAULTS }; }
+}
+
+function saveCfg(obj) {
+  localStorage.setItem('pwmp_cfg', JSON.stringify(obj));
+}
+
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let allAccounts = [];
+let sortCol     = 'name';
+let sortDir     = 1;
+let syncing     = false;
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadSettingsForm();
+  syncNow();
+});
+
+// ══════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+// CLICKUP FETCH — paginated, handles all 188 tasks
+// ══════════════════════════════════════════════════
+async function fetchClickUpTasks() {
+  const cfg   = getCfg();
+  const tasks = [];
+  let page    = 0;
+  let hasMore = true;
+
+  setSyncState('loading', 'Fetching…');
+
+  while (hasMore) {
+    const url = `https://api.clickup.com/api/v2/list/${cfg.clickupList}/task`
+      + `?archived=false&include_closed=true&subtasks=true&page=${page}&order_by=created&reverse=true`;
+
+    const resp = await fetch(url, {
+      headers: { 'Authorization': cfg.clickupKey }
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(`ClickUp API error ${resp.status}: ${err.err || resp.statusText}`);
+    }
+
+    const data = await resp.json();
+    const batch = data.tasks || [];
+    tasks.push(...batch);
+
+    setSyncState('loading', `Fetching… ${tasks.length} accounts`);
+
+    if (data.last_page || batch.length === 0) {
+      hasMore = false;
+    } else {
+      page++;
+      await sleep(150);
+    }
+  }
+
+  return tasks;
+}
+
+// ══════════════════════════════════════════════════
+// PARSE TASK → account object
+// ══════════════════════════════════════════════════
+function parseTask(t) {
+  const cf = {};
+  (t.custom_fields || []).forEach(f => {
+    const key = (f.name || '').toLowerCase().trim();
+    let val = '';
+    if (f.value !== null && f.value !== undefined) {
+      if (typeof f.value === 'object' && f.value.username) val = f.value.username;
+      else if (Array.isArray(f.value)) val = f.value.map(v => v.label || v.name || v).join(', ');
+      else val = String(f.value);
+    }
+    cf[key] = val;
+  });
+
+  const status   = normalizeStatus((t.status && t.status.status) ? t.status.status : '');
+  const assignee = (t.assignees && t.assignees[0]) ? (t.assignees[0].username || t.assignees[0].email || '') : '';
+
+  // City — try multiple field names
+  const city = cf['main target city'] || cf['target city'] || cf['city'] || '';
+  const state = cf['state'] || '';
+  const cid   = (cf['google ads cid'] || cf['cid'] || '').replace(/[^0-9]/g,'');
+
+  // Services from sub-tasks
+  const services = extractServices(t, cf);
+
+  // Launch date
+  const launchRaw = cf['launch date'] || cf['start date'] || '';
+  const launchDate = launchRaw ? formatDate(launchRaw) : '';
+
+  return {
+    id:         t.id,
+    name:       t.name || '',
+    cid,
+    city,
+    state,
+    status,
+    services,
+    launchDate,
+    assignee,
+    url:        t.url || '',
+  };
+}
+
+function extractServices(task, cf) {
+  const tags = [];
+  const sub  = (task.subtasks || []).map(s => (s.name || '').toLowerCase());
+  const taskTags = (task.tags || []).map(t => (t.name || '').toLowerCase());
+  const allText = [...sub, ...taskTags].join(' ');
+
+  if (allText.includes('seo'))                              tags.push('SEO');
+  if (allText.includes('google ads') || allText.includes('change management') || allText.includes('ppc')) tags.push('Google Ads');
+  if (allText.includes('lsa') || allText.includes('local service')) tags.push('LSA');
+
+  // Fallback to custom field
+  if (tags.length === 0) {
+    const cfSvc = cf['services'] || cf['service'] || '';
+    if (cfSvc) return cfSvc;
+    // If no sub-task info but has a CID, assume Google Ads
+    if (task.subtasks && task.subtasks.length === 0 && cf['google ads cid']) tags.push('Google Ads');
+  }
+
+  return tags.join(', ');
+}
+
+function normalizeStatus(raw) {
+  const s = raw.toLowerCase();
+  if (s.includes('active'))                        return 'Active';
+  if (s.includes('paused') || s.includes('pause')) return 'Paused';
+  if (s.includes('offboard') || s.includes('off ') || s.includes('cancel') || s.includes('closed')) return 'Offboarded';
+  if (s.includes('complete'))                      return 'Offboarded';
+  return raw ? (raw.charAt(0).toUpperCase() + raw.slice(1)) : 'Unknown';
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  // Try timestamp
+  const n = Number(val);
+  if (!isNaN(n) && n > 1000000) {
+    return new Date(n).toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'2-digit' });
+  }
+  return val;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ══════════════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════════════
+async function syncNow() {
+  if (syncing) return;
+  syncing = true;
+
+  const btn = document.getElementById('sync-btn');
+  if (btn) btn.disabled = true;
+  hideError();
+  setSyncState('loading', 'Syncing…');
+
+  try {
+    const tasks = await fetchClickUpTasks();
+    allAccounts = tasks.map(parseTask);
+
+    // Populate state filter
+    const states = [...new Set(allAccounts.map(a => a.state).filter(Boolean))].sort();
+    const stateEl = document.getElementById('filter-state');
+    if (stateEl) {
+      stateEl.innerHTML = '<option value="">All states</option>'
+        + states.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    updateStats();
+    renderTable(allAccounts);
+
+    const now = new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    setSyncState('live', `Synced ${now}`);
+    document.getElementById('nav-count').textContent = allAccounts.length;
+
+  } catch (err) {
+    console.error(err);
+    setSyncState('error', 'Sync failed');
+    showError(err.message);
+    document.getElementById('table-container').innerHTML =
+      `<div class="empty-state">Could not load data. Check your API key in Settings and try again.</div>`;
+  } finally {
+    syncing = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ══════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════
+function updateStats() {
+  const total    = allAccounts.length;
+  const active   = allAccounts.filter(a => a.status === 'Active').length;
+  const paused   = allAccounts.filter(a => a.status === 'Paused').length;
+  const offboard = allAccounts.filter(a => a.status === 'Offboarded').length;
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-active').textContent  = active;
+  document.getElementById('stat-paused').textContent  = paused;
+  document.getElementById('stat-offboard').textContent = offboard;
+}
+
+// ══════════════════════════════════════════════════
+// TABLE RENDER
+// ══════════════════════════════════════════════════
+function filterTable() {
+  const q       = (document.getElementById('search-input').value || '').toLowerCase();
+  const status  = document.getElementById('filter-status').value.toLowerCase();
+  const service = document.getElementById('filter-service').value.toLowerCase();
+  const state   = document.getElementById('filter-state').value;
+
+  let filtered = allAccounts.filter(a => {
+    const matchQ = !q || [a.name, a.city, a.state, a.cid, a.services, a.assignee]
+      .some(v => (v||'').toLowerCase().includes(q));
+    const matchStatus  = !status  || a.status.toLowerCase().includes(status);
+    const matchService = !service || (a.services||'').toLowerCase().includes(service);
+    const matchState   = !state   || a.state === state;
+    return matchQ && matchStatus && matchService && matchState;
+  });
+
+  filtered = sortAccounts(filtered);
+  renderTable(filtered);
+}
+
+function sortAccounts(list) {
+  return [...list].sort((a, b) => {
+    let av = a[sortCol] || '', bv = b[sortCol] || '';
+    if (sortCol === 'launchDate') {
+      av = new Date(av || 0); bv = new Date(bv || 0);
+      return sortDir * (av - bv);
+    }
+    return sortDir * String(av).localeCompare(String(bv));
+  });
+}
+
+function setSort(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+  filterTable();
+  document.querySelectorAll('.tbl th').forEach(th => th.classList.remove('sorted'));
+  const el = document.querySelector(`.tbl th[data-col="${col}"]`);
+  if (el) {
+    el.classList.add('sorted');
+    el.querySelector('.sort-arrow').textContent = sortDir === 1 ? '↑' : '↓';
+  }
+}
+
+function renderTable(accounts) {
+  const container = document.getElementById('table-container');
+  document.getElementById('table-count').textContent = `${accounts.length} accounts`;
+
+  if (accounts.length === 0) {
+    container.innerHTML = `<div class="empty-state">No accounts match your filters.</div>`;
+    return;
+  }
+
+  const rows = accounts.map(a => {
+    const statusClass = {
+      'Active': 'status-active',
+      'Paused': 'status-paused',
+      'Offboarded': 'status-offboarded',
+    }[a.status] || 'status-unknown';
+
+    const svcs = (a.services || '').split(',').map(s => s.trim()).filter(Boolean)
+      .map(s => {
+        const cls = s.toLowerCase().includes('seo') ? 'svc-seo'
+          : s.toLowerCase().includes('lsa') ? 'svc-lsa' : 'svc-google';
+        return `<span class="svc-tag ${cls}">${s}</span>`;
+      }).join('');
+
+    const nameLink = a.url
+      ? `<a href="${a.url}" target="_blank" style="color:inherit;text-decoration:none">${a.name}</a>`
+      : a.name;
+
+    return `<tr>
+      <td>
+        <div class="account-name">${nameLink}</div>
+        ${a.cid ? `<div class="account-cid">${a.cid}</div>` : ''}
+      </td>
+      <td class="city-cell">${a.city || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${a.state ? `<span class="state-pill">${a.state}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="status-badge ${statusClass}"><span class="status-dot"></span>${a.status}</span></td>
+      <td><div class="services-wrap">${svcs || '<span style="color:var(--muted);font-size:11px">—</span>'}</div></td>
+      <td class="launch-cell">${a.launchDate || '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-size:12px;color:var(--muted)">${a.assignee || '—'}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th data-col="name" onclick="setSort('name')" style="min-width:200px">Account <span class="sort-arrow">↑</span></th>
+            <th data-col="city" onclick="setSort('city')">Main target city <span class="sort-arrow"></span></th>
+            <th data-col="state" onclick="setSort('state')">State <span class="sort-arrow"></span></th>
+            <th data-col="status" onclick="setSort('status')">Status <span class="sort-arrow"></span></th>
+            <th>Services</th>
+            <th data-col="launchDate" onclick="setSort('launchDate')">Launch date <span class="sort-arrow"></span></th>
+            <th data-col="assignee" onclick="setSort('assignee')">Assignee <span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// ONBOARDING CONFLICT CHECK
+// ══════════════════════════════════════════════════
+function checkConflict() {
+  const q       = (document.getElementById('onboard-search').value || '').toLowerCase().trim();
+  const results = document.getElementById('conflict-results');
+
+  if (!q || q.length < 2) {
+    results.innerHTML = '';
+    return;
+  }
+
+  const matches = allAccounts.filter(a =>
+    (a.city || '').toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    results.innerHTML = `
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#22c55e" stroke-width="1.5"><path d="M10 18a8 8 0 100-16 8 8 0 000 16z"/><path d="M7 10l2 2 4-4"/></svg>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--green)">City is clear</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">No existing accounts found targeting "${q}". Safe to onboard.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const active   = matches.filter(a => a.status === 'Active');
+  const inactive = matches.filter(a => a.status !== 'Active');
+
+  let html = '';
+
+  if (active.length > 0) {
+    html += `
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#ef4444" stroke-width="1.5"><path d="M10 2l8 16H2L10 2z"/><path d="M10 8v4M10 14v.5"/></svg>
+          <div style="font-size:13px;font-weight:600;color:var(--red)">${active.length} active account${active.length>1?'s':''} in this market</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${active.map(a => accountConflictRow(a, 'active')).join('')}
+        </div>
+      </div>`;
+  }
+
+  if (inactive.length > 0) {
+    html += `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;">
+          ${inactive.length} inactive account${inactive.length>1?'s':''} (lower risk)
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${inactive.map(a => accountConflictRow(a, 'inactive')).join('')}
+        </div>
+      </div>`;
+  }
+
+  results.innerHTML = html;
+}
+
+function accountConflictRow(a, type) {
+  const statusClass = type === 'active' ? 'status-active' : 'status-unknown';
+  const svcs = (a.services||'').split(',').map(s=>s.trim()).filter(Boolean).map(s=>{
+    const cls = s.toLowerCase().includes('seo')?'svc-seo':s.toLowerCase().includes('lsa')?'svc-lsa':'svc-google';
+    return `<span class="svc-tag ${cls}" style="font-size:10px">${s}</span>`;
+  }).join('');
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;gap:10px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:13px;font-weight:600">${a.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${a.city}${a.state ? ', ' + a.state : ''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div class="services-wrap">${svcs}</div>
+        <span class="status-badge ${statusClass}" style="font-size:10px"><span class="status-dot"></span>${a.status}</span>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════
+function loadSettingsForm() {
+  const cfg = getCfg();
+  document.getElementById('s-clickup-key').value  = cfg.clickupKey  || '';
+  document.getElementById('s-clickup-list').value = cfg.clickupList || '';
+  document.getElementById('s-ads-token').value    = cfg.adsToken    || '';
+  document.getElementById('s-ads-mcc').value      = cfg.adsMcc      || '';
+}
+
+function saveSettings() {
+  const cfg = {
+    clickupKey:  document.getElementById('s-clickup-key').value.trim(),
+    clickupList: document.getElementById('s-clickup-list').value.trim(),
+    adsToken:    document.getElementById('s-ads-token').value.trim(),
+    adsMcc:      document.getElementById('s-ads-mcc').value.trim(),
+  };
+  saveCfg(cfg);
+  const banner = document.getElementById('save-banner');
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 3000);
+  setTimeout(() => { showView('clients'); syncNow(); }, 800);
+}
+
+// ══════════════════════════════════════════════════
+// EXPORT CSV
+// ══════════════════════════════════════════════════
+function exportCSV() {
+  const headers = ['Account Name','Google Ads CID','Main Target City','State','Status','Services','Launch Date','Assignee'];
+  const rows = allAccounts.map(a => [
+    `"${(a.name||'').replace(/"/g,'""')}"`,
+    a.cid, a.city, a.state, a.status,
+    `"${(a.services||'').replace(/"/g,'""')}"`,
+    a.launchDate, a.assignee
+  ].join(','));
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `pwmp-clients-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ══════════════════════════════════════════════════
+// UI HELPERS
+// ══════════════════════════════════════════════════
+function setSyncState(state, label) {
+  const dot   = document.getElementById('sync-dot');
+  const lbl   = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + state;
+  lbl.textContent = label;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = 'Error: ' + msg;
+  el.classList.add('show');
+}
+
+function hideError() {
+  document.getElementById('error-banner').classList.remove('show');
+}
+</script>
+</body>
+</html>
