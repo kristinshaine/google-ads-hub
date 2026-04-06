@@ -67,18 +67,13 @@ export default async function handler(req, res) {
       }
     }
 
-    // ── 3. Get LSA leads per account ──
-    // Use account-level reports which is more reliable
+    // ── 3. Get LSA data per account ──
     const accounts = await Promise.all(customers.map(async c => {
       const acct = emptyAccount(c);
-      try {
-        // Query LSA leads for this specific customer
-        const custHeaders = {
-          ...adsHeaders,
-          'login-customer-id': mccId,
-        };
+      const custHeaders = { ...adsHeaders };
 
-        // Get leads via local_services_lead resource
+      try {
+        // ─── 3a. LSA Leads ───
         const leadsQ = await fetch(
           `https://googleads.googleapis.com/v17/customers/${c.id}/googleAds:search`,
           {
@@ -90,9 +85,11 @@ export default async function handler(req, res) {
                   local_services_lead.id,
                   local_services_lead.lead_status,
                   local_services_lead.category_id,
-                  local_services_lead.lead_type
+                  local_services_lead.lead_type,
+                  local_services_lead.lead_charged_status
                 FROM local_services_lead
-                WHERE local_services_lead.creation_date_time DURING LAST_30_DAYS
+                WHERE local_services_lead.creation_date_time >= '${start_date}'
+                  AND local_services_lead.creation_date_time <= '${end_date} 23:59:59'
               `,
               pageSize: 1000,
             }),
@@ -104,18 +101,18 @@ export default async function handler(req, res) {
           for (const row of (leadsData.results || [])) {
             const lead = row.localServicesLead;
             if (!lead) continue;
-            const status = (lead.leadStatus || '').toUpperCase();
+            const chargedStatus = (lead.leadChargedStatus || lead.leadStatus || '').toUpperCase();
             const cat = lead.categoryId || '';
-            if (status === 'CHARGED') {
+            if (chargedStatus === 'CHARGED') {
               acct.charged_leads++;
               if (cat) acct.lead_categories[cat] = (acct.lead_categories[cat] || 0) + 1;
-            } else if (['NEW','ACTIVE','BOOKED'].includes(status)) {
+            } else {
               acct.not_charged_leads++;
             }
           }
         }
 
-        // Get verification status
+        // ─── 3b. Verification status (insurance, BG check) ───
         const verifyQ = await fetch(
           `https://googleads.googleapis.com/v17/customers/${c.id}/googleAds:search`,
           {
@@ -171,6 +168,119 @@ export default async function handler(req, res) {
           }
         }
 
+        // ─── 3c. Campaign metrics: impressions, impression rates, budget, lead spend ───
+        const campaignQ = await fetch(
+          `https://googleads.googleapis.com/v17/customers/${c.id}/googleAds:search`,
+          {
+            method: 'POST',
+            headers: { ...custHeaders, 'login-customer-id': c.id },
+            body: JSON.stringify({
+              query: `
+                SELECT
+                  campaign.id,
+                  campaign.name,
+                  campaign.status,
+                  campaign.advertising_channel_type,
+                  campaign_budget.amount_micros,
+                  metrics.impressions,
+                  metrics.cost_micros,
+                  metrics.search_impression_share,
+                  metrics.search_top_impression_share,
+                  metrics.search_absolute_top_impression_share
+                FROM campaign
+                WHERE campaign.advertising_channel_type = 'LOCAL_SERVICES'
+                  AND segments.date BETWEEN '${start_date}' AND '${end_date}'
+              `,
+              pageSize: 100,
+            }),
+          }
+        );
+
+        if (campaignQ.ok) {
+          const campData = await campaignQ.json();
+          let totalImpressions = 0;
+          let totalCostMicros = 0;
+          let topImpShare = null;
+          let absTopImpShare = null;
+          let budgetMicros = 0;
+
+          for (const row of (campData.results || [])) {
+            const m = row.metrics || {};
+            totalImpressions += parseInt(m.impressions || 0);
+            totalCostMicros += parseInt(m.costMicros || 0);
+
+            // Take the impression share values (they come as fractions 0-1)
+            if (m.searchTopImpressionShare != null) {
+              topImpShare = parseFloat(m.searchTopImpressionShare);
+            }
+            if (m.searchAbsoluteTopImpressionShare != null) {
+              absTopImpShare = parseFloat(m.searchAbsoluteTopImpressionShare);
+            }
+
+            // Budget from campaign_budget
+            const cb = row.campaignBudget;
+            if (cb && cb.amountMicros) {
+              budgetMicros = Math.max(budgetMicros, parseInt(cb.amountMicros || 0));
+            }
+          }
+
+          acct.ad_impressions = totalImpressions;
+          acct.lead_spent = totalCostMicros / 1000000; // Convert micros to dollars
+          if (topImpShare !== null) acct.top_impression_rate = Math.round(topImpShare * 10000) / 100;
+          if (absTopImpShare !== null) acct.abs_top_impression_rate = Math.round(absTopImpShare * 10000) / 100;
+          if (budgetMicros > 0) acct.weekly_budget = budgetMicros / 1000000;
+        }
+
+        // ─── 3d. Local Services settings: job types, service areas, schedule ───
+        const settingsQ = await fetch(
+          `https://googleads.googleapis.com/v17/customers/${c.id}/googleAds:search`,
+          {
+            method: 'POST',
+            headers: { ...custHeaders, 'login-customer-id': c.id },
+            body: JSON.stringify({
+              query: `
+                SELECT
+                  local_services_campaign_settings.category_bids
+                FROM campaign
+                WHERE campaign.advertising_channel_type = 'LOCAL_SERVICES'
+                  AND campaign.status != 'REMOVED'
+              `,
+              pageSize: 10,
+            }),
+          }
+        );
+
+        if (settingsQ.ok) {
+          const settData = await settingsQ.json();
+          const jobTypes = new Set();
+          for (const row of (settData.results || [])) {
+            const catBids = row.localServicesCampaignSettings?.categoryBids || [];
+            for (const cb of catBids) {
+              if (cb.categoryId) {
+                jobTypes.add(formatCategory(cb.categoryId));
+              }
+            }
+          }
+          if (jobTypes.size > 0) {
+            acct.job_types = [...jobTypes];
+          }
+        }
+
+        // ─── 3e. Customer-level data: reviews, responsiveness ───
+        // Reviews and responsiveness come from the local_services_employee resource
+        // or customer attributes. Try local_services_lead for responsiveness.
+        const customerQ = await fetch(
+          `https://googleads.googleapis.com/v17/customers/${c.id}`,
+          {
+            method: 'GET',
+            headers: { ...custHeaders, 'login-customer-id': c.id },
+          }
+        );
+
+        if (customerQ.ok) {
+          // Customer data available (basic info)
+        }
+
       } catch(e) {
         acct.wc_warnings.push(`Data fetch error: ${e.message}`);
       }
@@ -193,19 +303,32 @@ export default async function handler(req, res) {
         });
         const profiles = profResp.ok ? ((await profResp.json()).profiles || []) : [];
 
-        // Get leads for date range
-        const leadsResp = await fetch(
-          `https://app.whatconverts.com/api/v1/leads?start_date=${start_date}&end_date=${end_date}&leads_per_page=1000&page_number=1`,
-          { headers: { 'Authorization': `Basic ${wcCreds}` } }
-        );
+        // Get leads for date range — paginate to get all
+        let allWcLeads = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore && page <= 10) {
+          const leadsResp = await fetch(
+            `https://app.whatconverts.com/api/v1/leads?start_date=${start_date}&end_date=${end_date}&leads_per_page=1000&page_number=${page}`,
+            { headers: { 'Authorization': `Basic ${wcCreds}` } }
+          );
+          if (leadsResp.ok) {
+            const body = await leadsResp.json();
+            const leads = body.leads || [];
+            allWcLeads = allWcLeads.concat(leads);
+            hasMore = leads.length === 1000;
+            page++;
+          } else {
+            hasMore = false;
+            if (page === 1) {
+              wcStatus = { name: 'WhatConverts API', status: 'error', message: 'Leads fetch failed: ' + leadsResp.status };
+            }
+          }
+        }
 
-        if (leadsResp.ok) {
-          const wcLeads = (await leadsResp.json()).leads || [];
-
+        if (allWcLeads.length > 0 || wcStatus.status === 'ok') {
           // Match leads to accounts
           for (const acct of accounts) {
-            const acctWords = normalizeStr(acct.display_name).split('').slice(0, 6).join('');
-
             // Find matching WC profile
             const profile = profiles.find(p => {
               const pName = normalizeStr(p.profile_name);
@@ -214,7 +337,7 @@ export default async function handler(req, res) {
             });
 
             const matched = profile
-              ? wcLeads.filter(l => String(l.profile_id) === String(profile.profile_id))
+              ? allWcLeads.filter(l => String(l.profile_id) === String(profile.profile_id))
               : [];
 
             // Dedupe
@@ -230,18 +353,31 @@ export default async function handler(req, res) {
             acct.wc_unique_leads = unique;
             acct.wc_repeat_leads = repeat;
 
-            if (!matched.length && wcLeads.length) {
+            if (!matched.length && allWcLeads.length) {
               acct.wc_warnings.push('Zero WhatConverts leads for this period');
             }
           }
-        } else {
-          wcStatus = { name: 'WhatConverts API', status: 'error', message: 'Leads fetch failed: ' + leadsResp.status };
         }
       } catch(e) {
         wcStatus = { name: 'WhatConverts API', status: 'error', message: e.message };
       }
     } else {
       wcStatus = { name: 'WhatConverts API', status: 'error', message: 'No credentials configured' };
+    }
+
+    // ── 5. Compute issues per account ──
+    for (const acct of accounts) {
+      const issues = [];
+      if ((acct.charged_leads || 0) === 0 && (acct.not_charged_leads || 0) === 0) issues.push('Zero leads');
+      if (acct.insurance_status === 'expired') issues.push('Insurance expired');
+      if (acct.insurance_status === 'expiring') issues.push('Insurance expiring soon');
+      if (acct.background_check_status !== 'complete' && acct.background_check_status !== 'unknown') issues.push('BG check: ' + acct.background_check_status);
+      if (acct.billing_status !== 'complete') issues.push('Billing incomplete');
+      if (acct.gbp_link_status !== 'complete') issues.push('GBP not linked');
+      if (acct.phone_responsiveness !== null && acct.phone_responsiveness < 70) issues.push('Low responsiveness: ' + acct.phone_responsiveness + '%');
+      if (acct.photos !== null && acct.photos < 5) issues.push('Low photo count: ' + acct.photos);
+      acct.compliance_issues = issues.map(d => ({ details: d }));
+      acct.compliance_issue_count = issues.length;
     }
 
     return res.status(200).json({
@@ -273,6 +409,11 @@ function emptyAccount(c) {
     gbp_link_status: 'complete', gbp_link_details: 'GBP linked',
     compliance_issues: [], compliance_issue_count: 0,
     lead_categories: {}, wc_warnings: [],
+    // New metrics
+    ad_impressions: null, lead_spent: null,
+    top_impression_rate: null, abs_top_impression_rate: null,
+    job_types: [], photos: null, message_lead: null,
+    ad_schedule: null, service_areas: [],
   };
 }
 
@@ -281,4 +422,10 @@ function fmtDate(iso) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');
   return `${m}/${d}/${y}`;
+}
+function formatCategory(catId) {
+  return (catId || '')
+    .replace('xcat:service_area_business_', '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
