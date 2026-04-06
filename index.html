@@ -64,7 +64,7 @@ nav{padding:8px 10px;flex:1}
 .page-content{padding:24px 28px;flex:1}
 
 /* STAT CARDS */
-.stats-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:var(--shadow)}
 .stat-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .stat-value{font-size:28px;font-weight:700;color:var(--text);font-family:var(--mono);line-height:1}
@@ -247,7 +247,7 @@ textarea.lsa-paste:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,8
     <div class="nav-section">LSA Operations</div>
     <div class="nav-item" onclick="showView('lsa-weekly')" id="nav-lsa-weekly">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
-      LSA Weekly
+      LSA Operations
       <span class="nav-badge" id="nav-lsa-badge">—</span>
     </div>
     <div class="nav-section">Campaign Ops</div>
@@ -523,11 +523,11 @@ textarea.lsa-paste:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,8
 <div id="view-lsa-weekly" class="view">
   <div class="topbar">
     <div>
-      <div class="page-title">LSA Weekly Report</div>
-      <div class="page-sub" id="lsa-report-sub">Select a date range and generate report</div>
+      <div class="page-title">LSA Operations</div>
+      <div class="page-sub" id="lsa-report-sub">Select a date range to generate report · Data pulls from LSA, Google Ads & WhatConverts APIs</div>
     </div>
     <div class="topbar-actions">
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:2px">
           <label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Start date</label>
           <input type="date" id="lsa-start-date" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;cursor:pointer"/>
@@ -536,16 +536,27 @@ textarea.lsa-paste:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,8
           <label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">End date</label>
           <input type="date" id="lsa-end-date" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;cursor:pointer"/>
         </div>
-        <button class="btn primary" onclick="lsaGenerate()" id="lsa-gen-btn" style="align-self:flex-end">
+        <button class="btn primary" onclick="lsaGenerate()" id="lsa-gen-btn">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M3 8a5 5 0 009.9-1M13 8a5 5 0 01-9.9 1"/><path d="M11 5l2 2-2 2M5 9l-2 2 2 2"/></svg>
           Generate Report
         </button>
-        <button class="btn" onclick="lsaExportWeekly()" id="lsa-export-btn" style="align-self:flex-end;display:none">
+        <button class="btn" onclick="lsaExportWeekly()" id="lsa-export-btn" style="display:none">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M8 2v8M5 7l3 3 3-3M3 12h10"/></svg>
           Export CSV
         </button>
       </div>
     </div>
+  </div>
+  <!-- Quick date presets -->
+  <div style="padding:4px 28px 0;display:flex;gap:6px;flex-wrap:wrap;background:var(--surface);border-bottom:1px solid var(--border)">
+    <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 0;margin-right:4px">Quick:</span>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('thisWeek')">This Week</button>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('lastWeek')">Last Week</button>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('last7')">Last 7 Days</button>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('last14')">Last 14 Days</button>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('last30')">Last 30 Days</button>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('thisMonth')">This Month</button>
+    <button class="btn" style="padding:3px 10px;font-size:11px" onclick="lsaDatePreset('lastMonth')">Last Month</button>
   </div>
 
   
@@ -1135,17 +1146,28 @@ function lsaSaveToken(s,e){const t=document.getElementById('lsa-token-input').va
 
 function lsaRenderReport(data,start,end){
   const accounts=data.accounts||[];
+  lsaApplyManualFields(accounts);
   const fmt=d=>{const p=d.split('-');return p[1]+'/'+p[2]+'/'+p[0].slice(2);};
   const subEl=document.getElementById('lsa-report-sub');
   if(subEl)subEl.textContent=fmt(start)+' – '+fmt(end)+' · '+accounts.length+' accounts';
   const apiBar=document.getElementById('lsa-api-bar');
   if(apiBar&&data.api_statuses){apiBar.style.display='flex';apiBar.innerHTML='<span style="color:var(--muted);margin-right:4px">APIs:</span>'+data.api_statuses.map(a=>'<span class="lsa-api-pill '+(a.status==='ok'?'lsa-api-ok':a.status==='error'?'lsa-api-err':'lsa-api-warn')+'">'+(a.status==='ok'?'✓':'✗')+' '+a.name+'</span>').join('');}
   const totalCharged=accounts.reduce((s,a)=>s+(a.charged_leads||0),0);
+  const totalNotCharged=accounts.reduce((s,a)=>s+(a.not_charged_leads||0),0);
   const totalWC=accounts.reduce((s,a)=>s+(a.wc_total_leads||0),0);
+  const totalLeadSpent=accounts.reduce((s,a)=>s+(a.lead_spent||0),0);
+  const totalImpressions=accounts.reduce((s,a)=>s+(a.ad_impressions||0),0);
   const insIssues=accounts.filter(a=>a.insurance_expiry_warning).length;
   const zeroLeads=accounts.filter(a=>(a.charged_leads||0)===0).length;
+  const issueCount=accounts.filter(a=>a.compliance_issue_count>0).length;
   const sc=document.getElementById('lsa-stat-cards');
-  if(sc)sc.innerHTML='<div class="stat-card accent-blue"><div class="stat-label">Total accounts</div><div class="stat-value">'+accounts.length+'</div><div class="stat-sub">in report</div></div><div class="stat-card accent-green"><div class="stat-label">Total charged leads</div><div class="stat-value">'+totalCharged+'</div><div class="stat-sub">across all accounts</div></div><div class="stat-card accent-teal"><div class="stat-label">WhatConverts total</div><div class="stat-value">'+totalWC+'</div><div class="stat-sub">across all accounts</div></div><div class="stat-card accent-red"><div class="stat-label">Insurance issues</div><div class="stat-value">'+insIssues+'</div><div class="stat-sub">'+zeroLeads+' accounts with zero leads</div></div>';
+  if(sc)sc.innerHTML=`
+    <div class="stat-card accent-blue"><div class="stat-label">Total accounts</div><div class="stat-value">${accounts.length}</div><div class="stat-sub">in report</div></div>
+    <div class="stat-card accent-green"><div class="stat-label">Charged leads</div><div class="stat-value">${totalCharged}</div><div class="stat-sub">${totalNotCharged} not charged</div></div>
+    <div class="stat-card accent-teal"><div class="stat-label">WC total leads</div><div class="stat-value">${totalWC}</div><div class="stat-sub">across all accounts</div></div>
+    <div class="stat-card" style="border-top:3px solid var(--purple)"><div class="stat-label">Lead spend</div><div class="stat-value" style="color:var(--purple)">$${totalLeadSpent.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="stat-sub">${totalImpressions.toLocaleString()} impressions</div></div>
+    <div class="stat-card accent-red"><div class="stat-label">Needs attention</div><div class="stat-value">${issueCount}</div><div class="stat-sub">${insIssues} insurance · ${zeroLeads} zero leads</div></div>
+  `;
   ['lsa-weekly-stats','lsa-filter-bar','lsa-weekly-table-wrap'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
   const emptyEl=document.getElementById('lsa-weekly-empty');if(emptyEl)emptyEl.style.display='none';
   const expBtn=document.getElementById('lsa-export-btn');if(expBtn)expBtn.style.display='flex';
@@ -1180,10 +1202,40 @@ function lsaFilterRender(){
     const flag=a.insurance_expiry_warning||a.compliance_issue_count>0;
     const cats=Object.entries(a.lead_categories||{}).map(([k,v])=>lsaFmtCat(k)+': '+v).join(', ');
     const safeId=a.lsa_customer_id.replace(/'/g,"\\'");
-    return '<tr onclick="lsaOpenModal(\''+safeId+'\')"><td><div style="font-size:13px;font-weight:600;color:var(--accent)">'+a.display_name+'</div>'+(cats?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+cats+'</div>':'')+'</td><td class="mono" style="color:'+((a.charged_leads||0)>0?'var(--green)':'var(--muted)')+'">'+( a.charged_leads??0)+'</td><td class="mono" style="color:'+((a.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')+'">'+( a.not_charged_leads??0)+'</td><td class="mono" style="color:'+((a.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')+'">'+( a.wc_unique_leads??0)+'</td><td class="mono" style="color:var(--muted)">'+( a.wc_repeat_leads??0)+'</td><td class="mono" style="color:'+((a.wc_total_leads||0)>0?'var(--green)':'var(--muted)')+'">'+( a.wc_total_leads??0)+'</td><td>'+insLabel(a)+(a.insurance_details?'<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">'+a.insurance_details+'</div>':'')+'</td><td>'+chip(a.billing_status||'—',a.billing_status==='complete'?'green':'amber')+'</td><td>'+chip(a.background_check_status||'—',a.background_check_status==='complete'?'green':'amber')+'</td><td>'+chip(a.gbp_link_status||'—',a.gbp_link_status==='complete'?'green':'amber')+'</td><td>'+(flag?chip('⚠ Review','amber'):chip('✓ OK','green'))+'</td><td onclick="event.stopPropagation()" style="min-width:160px"><textarea class="note-field" rows="2" placeholder="Add optimization notes…" onchange="lsaSaveNote(\''+safeId+'\',\''+lsaCurrentPeriod.replace(/'/g,"\\'")+'\',this.value)">'+note+'</textarea></td></tr>';
+    return '<tr onclick="lsaOpenModal(\''+safeId+'\')">'
+      +'<td><div style="font-size:13px;font-weight:600;color:var(--accent)">'+a.display_name+'</div>'+(cats?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+cats+'</div>':'')+'</td>'
+      +'<td class="mono" style="color:'+((a.charged_leads||0)>0?'var(--green)':'var(--muted)')+'">'+( a.charged_leads??0)+'</td>'
+      +'<td class="mono" style="color:'+((a.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')+'">'+( a.not_charged_leads??0)+'</td>'
+      +'<td class="mono" style="color:'+((a.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')+'">'+( a.wc_unique_leads??0)+'</td>'
+      +'<td class="mono" style="color:var(--muted)">'+( a.wc_repeat_leads??0)+'</td>'
+      +'<td class="mono" style="color:'+((a.wc_total_leads||0)>0?'var(--green)':'var(--muted)')+'">'+( a.wc_total_leads??0)+'</td>'
+      +'<td class="mono" style="color:'+((a.phone_responsiveness||100)<70?'var(--yellow)':'var(--text)')+'">'+( a.phone_responsiveness!=null?a.phone_responsiveness+'%':'—')+'</td>'
+      +'<td class="mono">'+(a.reviews_count!=null?a.reviews_count:'—')+(a.average_rating?' <span style="color:var(--yellow);font-size:10px">★'+a.average_rating+'</span>':'')+'</td>'
+      +'<td class="mono">'+(a.weekly_budget!=null?'$'+Number(a.weekly_budget).toLocaleString():'—')+'</td>'
+      +'<td class="mono" style="color:var(--purple)">'+(a.lead_spent!=null?'$'+Number(a.lead_spent).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—')+'</td>'
+      +'<td class="mono">'+(a.ad_impressions!=null?Number(a.ad_impressions).toLocaleString():'—')+'</td>'
+      +'<td class="mono">'+(a.top_impression_rate!=null?a.top_impression_rate+'%':'—')+'</td>'
+      +'<td class="mono">'+(a.abs_top_impression_rate!=null?a.abs_top_impression_rate+'%':'—')+'</td>'
+      +'<td>'+chip(a.billing_status||'—',a.billing_status==='complete'?'green':'amber')+'</td>'
+      +'<td>'+insLabel(a)+(a.insurance_details?'<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">'+a.insurance_details+'</div>':'')+'</td>'
+      +'<td>'+chip(a.background_check_status||'—',a.background_check_status==='complete'?'green':'amber')+'</td>'
+      +'<td>'+chip(a.gbp_link_status||'—',a.gbp_link_status==='complete'?'green':'amber')+'</td>'
+      +'<td style="font-size:11px;max-width:140px">'+(a.job_types&&a.job_types.length?a.job_types.join(', ')+' <span style="color:var(--muted)">('+a.job_types.length+')</span>':'—')+'</td>'
+      +'<td class="mono" onclick="event.stopPropagation()"><span class="lsa-editable-photos" data-id="'+safeId+'" onclick="lsaEditPhotos(this)" style="cursor:pointer;border-bottom:1px dashed var(--border2);padding:0 2px;color:'+((a.photos!=null&&a.photos<5)?'var(--red)':'var(--text)')+'">'+(a.photos??'—')+'</span></td>'
+      +'<td onclick="event.stopPropagation()"><label style="cursor:pointer;display:inline-flex;align-items:center"><input type="checkbox" '+(a.message_lead?'checked':'')+' onchange="lsaToggleMsgLead(\''+safeId+'\',this.checked)" style="accent-color:var(--green);width:14px;height:14px"></label></td>'
+      +'<td>'+(a.compliance_issue_count>0?chip('⚠ '+a.compliance_issue_count,'amber'):chip('✓ OK','green'))+'</td>'
+      +'<td onclick="event.stopPropagation()" style="min-width:160px"><textarea class="note-field" rows="2" placeholder="Add notes…" onchange="lsaSaveNote(\''+safeId+'\',\''+lsaCurrentPeriod.replace(/'/g,"\\'")+'\',this.value)">'+note+'</textarea></td>'
+      +'</tr>';
   }).join('');
   const tbody=document.getElementById('lsa-weekly-table-body');
-  if(tbody)tbody.innerHTML='<div style="overflow-x:auto"><table class="lsa-row-tbl"><thead><tr><th style="min-width:200px">Account</th><th>Charged</th><th>Not Chgd</th><th>WC Uniq</th><th>WC Repeat</th><th>WC Total</th><th style="min-width:160px">Insurance</th><th>Billing</th><th>BG Check</th><th>GBP</th><th>Status</th><th style="min-width:180px">Optimization Notes</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  if(tbody)tbody.innerHTML='<div style="overflow-x:auto"><table class="lsa-row-tbl"><thead><tr>'
+    +'<th style="min-width:200px">Account</th><th>Charged</th><th>Not Chgd</th><th>WC Uniq</th><th>WC Rpt</th><th>WC Total</th>'
+    +'<th>Resp%</th><th>Reviews</th><th>Budget</th><th>Lead Spent</th><th>Impr</th>'
+    +'<th>Top Imp%</th><th>AbsTop%</th>'
+    +'<th>Billing</th><th style="min-width:140px">Insurance</th><th>BG Check</th><th>GBP</th>'
+    +'<th>Job Types</th><th>Photos</th><th>Msg Lead</th><th>Issues</th>'
+    +'<th style="min-width:180px">Notes</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function lsaFmtCat(k){return k.replace('xcat:service_area_business_','').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
@@ -1201,7 +1253,37 @@ function lsaOpenModal(id){
   const notes=lsaGetNotes();const nk=acct.lsa_customer_id+'__'+lsaCurrentPeriod;
   const safeId=acct.lsa_customer_id.replace(/'/g,"\\'");
   const safePeriod=lsaCurrentPeriod.replace(/'/g,"\\'");
-  document.getElementById('modal-acct-body').innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'+m('Charged Leads',acct.charged_leads,(acct.charged_leads||0)>0?'var(--green)':'var(--muted)')+m('Not Charged',acct.not_charged_leads,(acct.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')+m('WC Unique',acct.wc_unique_leads,(acct.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')+m('WC Repeat',acct.wc_repeat_leads)+m('WC Total',acct.wc_total_leads,(acct.wc_total_leads||0)>0?'var(--green)':'var(--muted)')+m('LSA Customer ID',acct.lsa_customer_id)+'</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px"><div class="modal-metric"><div class="modal-metric-key">Insurance</div><div class="modal-metric-val" style="font-size:13px;color:'+ic(acct.insurance_status)+'">'+( acct.insurance_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.insurance_details||'')+'</div></div><div class="modal-metric"><div class="modal-metric-key">Billing</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.billing_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.billing_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.billing_details||'')+'</div></div><div class="modal-metric"><div class="modal-metric-key">Background Check</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.background_check_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.background_check_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.background_check_details||'')+'</div></div><div class="modal-metric"><div class="modal-metric-key">Google Business Profile</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.gbp_link_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.gbp_link_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.gbp_link_details||'')+'</div></div></div>'+(cats.length?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Lead Categories</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+cats.map(([k,v])=>'<span class="chip chip-blue">'+lsaFmtCat(k)+': '+v+'</span>').join('')+'</div></div>':'')+(acct.wc_warnings?.length?'<div style="margin-bottom:16px;padding:10px 12px;background:#fefce8;border-radius:8px;border-left:3px solid var(--yellow)">'+acct.wc_warnings.map(w=>'<div style="font-size:11px;color:#92400e">⚠ '+w+'</div>').join('')+'</div>':'')+(acct.compliance_issues?.length?'<div style="margin-bottom:16px;padding:10px 12px;background:#fee2e2;border-radius:8px;border-left:3px solid var(--red)">'+acct.compliance_issues.map(c=>'<div style="font-size:11px;color:var(--red)">✗ '+c.details+'</div>').join('')+'</div>':'')+'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Optimization Notes</div><textarea class="note-field" rows="4" style="width:100%" placeholder="What was done this week? What needs follow-up?" onchange="lsaSaveNote(\''+safeId+'\',\''+safePeriod+'\',this.value)">'+(notes[nk]||'')+'</textarea><div style="font-size:11px;color:var(--muted);margin-top:4px">Notes auto-saved locally.</div></div>';
+  document.getElementById('modal-acct-body').innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
+    +m('Charged Leads',acct.charged_leads,(acct.charged_leads||0)>0?'var(--green)':'var(--muted)')
+    +m('Not Charged',acct.not_charged_leads,(acct.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')
+    +m('WC Unique',acct.wc_unique_leads,(acct.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')
+    +m('WC Repeat',acct.wc_repeat_leads)
+    +m('WC Total',acct.wc_total_leads,(acct.wc_total_leads||0)>0?'var(--green)':'var(--muted)')
+    +m('Responsiveness',acct.phone_responsiveness!=null?acct.phone_responsiveness+'%':'—',(acct.phone_responsiveness||100)<70?'var(--yellow)':null)
+    +m('Reviews',acct.reviews_count!=null?acct.reviews_count+(acct.average_rating?' (★'+acct.average_rating+')':''):'—')
+    +m('Budget',acct.weekly_budget!=null?'$'+Number(acct.weekly_budget).toLocaleString():'—')
+    +m('Lead Spent',acct.lead_spent!=null?'$'+Number(acct.lead_spent).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—','var(--purple)')
+    +m('Ad Impressions',acct.ad_impressions!=null?Number(acct.ad_impressions).toLocaleString():'—')
+    +m('Top Impression %',acct.top_impression_rate!=null?acct.top_impression_rate+'%':'—')
+    +m('Abs Top Impression %',acct.abs_top_impression_rate!=null?acct.abs_top_impression_rate+'%':'—')
+    +m('Photos',acct.photos??'—',(acct.photos!=null&&acct.photos<5)?'var(--red)':null)
+    +m('Message Lead',acct.message_lead?'Enabled':'Disabled',acct.message_lead?'var(--green)':'var(--muted)')
+    +m('LSA Customer ID',acct.lsa_customer_id)
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px">'
+    +'<div class="modal-metric"><div class="modal-metric-key">Insurance</div><div class="modal-metric-val" style="font-size:13px;color:'+ic(acct.insurance_status)+'">'+( acct.insurance_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.insurance_details||'')+'</div></div>'
+    +'<div class="modal-metric"><div class="modal-metric-key">Billing</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.billing_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.billing_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.billing_details||'')+'</div></div>'
+    +'<div class="modal-metric"><div class="modal-metric-key">Background Check</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.background_check_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.background_check_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.background_check_details||'')+'</div></div>'
+    +'<div class="modal-metric"><div class="modal-metric-key">Google Business Profile</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.gbp_link_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.gbp_link_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.gbp_link_details||'')+'</div></div>'
+    +'</div>'
+    +(acct.job_types&&acct.job_types.length?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Job Types ('+acct.job_types.length+')</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+acct.job_types.map(j=>'<span class="chip chip-blue">'+j+'</span>').join('')+'</div></div>':'')
+    +(acct.service_areas&&acct.service_areas.length?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Service Areas ('+acct.service_areas.length+')</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+acct.service_areas.map(s=>'<span class="chip chip-blue">'+s+'</span>').join('')+'</div></div>':'')
+    +(acct.ad_schedule?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Ad Schedule</div><div style="font-size:12px;font-family:var(--mono)">'+acct.ad_schedule+'</div></div>':'')
+    +(cats.length?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Lead Categories</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+cats.map(([k,v])=>'<span class="chip chip-blue">'+lsaFmtCat(k)+': '+v+'</span>').join('')+'</div></div>':'')
+    +((acct.charged_leads||0)>0?'<div style="margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Performance</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">'+m('Cost per Lead','$'+((acct.lead_spent||0)/(acct.charged_leads||1)).toFixed(2))+m('Budget Util',acct.weekly_budget?Math.round(((acct.lead_spent||0)/(acct.weekly_budget||1))*100)+'%':'—')+m('Imp→Lead Rate',acct.ad_impressions?((acct.charged_leads/(acct.ad_impressions||1))*100).toFixed(3)+'%':'—')+'</div></div>':'')
+    +(acct.wc_warnings?.length?'<div style="margin-bottom:16px;padding:10px 12px;background:#fefce8;border-radius:8px;border-left:3px solid var(--yellow)">'+acct.wc_warnings.map(w=>'<div style="font-size:11px;color:#92400e">⚠ '+w+'</div>').join('')+'</div>':'')
+    +(acct.compliance_issues?.length?'<div style="margin-bottom:16px;padding:10px 12px;background:#fee2e2;border-radius:8px;border-left:3px solid var(--red)">'+acct.compliance_issues.map(c=>'<div style="font-size:11px;color:var(--red)">✗ '+c.details+'</div>').join('')+'</div>':'')
+    +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Optimization Notes</div><textarea class="note-field" rows="4" style="width:100%" placeholder="What was done? What needs follow-up?" onchange="lsaSaveNote(\''+safeId+'\',\''+safePeriod+'\',this.value)">'+(notes[nk]||'')+'</textarea><div style="font-size:11px;color:var(--muted);margin-top:4px">Notes auto-saved locally.</div></div>';
   document.getElementById('lsa-acct-modal').style.display='block';
   document.body.style.overflow='hidden';
 }
@@ -1243,16 +1325,83 @@ function lsaLoadSnapshot(key){
 }
 function lsaExportWeekly(){
   if(!lsaCurrentData)return;
-  const h=['Account','LSA ID','Charged','Not Charged','WC Unique','WC Repeat','WC Total','Insurance Status','Insurance Details','Billing','BG Check','GBP','Compliance Issues','Lead Categories','WC Warnings','Notes'];
+  const h=['Account','LSA ID','Charged','Not Charged','WC Unique','WC Repeat','WC Total','Responsiveness %','Reviews','Rating','Budget','Lead Spent','Ad Impressions','Top Impression %','Abs Top Impression %','Insurance Status','Insurance Details','Billing','BG Check','GBP','Job Types','Photos','Message Lead','Issues','Notes'];
   const notes=lsaGetNotes();const seen=new Set();
   const rows=(lsaCurrentData.accounts||[]).filter(a=>{if(seen.has(a.lsa_customer_id))return false;seen.add(a.lsa_customer_id);return true;}).map(a=>{
     const nk=a.lsa_customer_id+'__'+lsaCurrentPeriod;
-    const cats=Object.entries(a.lead_categories||{}).map(([k,v])=>lsaFmtCat(k)+': '+v).join('; ');
-    return['"'+a.display_name+'"',a.lsa_customer_id,a.charged_leads??0,a.not_charged_leads??0,a.wc_unique_leads??0,a.wc_repeat_leads??0,a.wc_total_leads??0,'"'+(a.insurance_status||'')+'"','"'+(a.insurance_details||'')+'"','"'+(a.billing_status||'')+'"','"'+(a.background_check_status||'')+'"','"'+(a.gbp_link_status||'')+'"',a.compliance_issue_count||0,'"'+cats+'"','"'+((a.wc_warnings||[]).join('; '))+'"','"'+((notes[nk]||'').replace(/"/g,'""'))+'"'].join(',');
+    return['"'+a.display_name+'"',a.lsa_customer_id,a.charged_leads??0,a.not_charged_leads??0,a.wc_unique_leads??0,a.wc_repeat_leads??0,a.wc_total_leads??0,a.phone_responsiveness??'',a.reviews_count??'',a.average_rating??'',a.weekly_budget??'',a.lead_spent??'',a.ad_impressions??'',a.top_impression_rate??'',a.abs_top_impression_rate??'','"'+(a.insurance_status||'')+'"','"'+(a.insurance_details||'')+'"','"'+(a.billing_status||'')+'"','"'+(a.background_check_status||'')+'"','"'+(a.gbp_link_status||'')+'"','"'+((a.job_types||[]).join('; '))+'"',a.photos??'',a.message_lead?'Enabled':'Disabled',a.compliance_issue_count||0,'"'+((notes[nk]||'').replace(/"/g,'""'))+'"'].join(',');
   });
   const csv=[h.join(','),...rows].join('\n');
   const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='lsa-weekly-'+lsaCurrentPeriod.replace(/ /g,'-')+'.csv';a.click();URL.revokeObjectURL(url);
+  const a=document.createElement('a');a.href=url;a.download='lsa-operations-'+lsaCurrentPeriod.replace(/ /g,'-')+'.csv';a.click();URL.revokeObjectURL(url);
+}
+// ── Date presets ──
+function lsaDatePreset(preset){
+  const now=new Date();
+  let start,end=new Date(now);
+  switch(preset){
+    case 'thisWeek': start=new Date(now);start.setDate(now.getDate()-now.getDay()+1);break;
+    case 'lastWeek': start=new Date(now);start.setDate(now.getDate()-now.getDay()-6);end=new Date(start);end.setDate(start.getDate()+6);break;
+    case 'last7': start=new Date(now);start.setDate(now.getDate()-7);break;
+    case 'last14': start=new Date(now);start.setDate(now.getDate()-14);break;
+    case 'last30': start=new Date(now);start.setDate(now.getDate()-30);break;
+    case 'thisMonth': start=new Date(now.getFullYear(),now.getMonth(),1);break;
+    case 'lastMonth': start=new Date(now.getFullYear(),now.getMonth()-1,1);end=new Date(now.getFullYear(),now.getMonth(),0);break;
+    default:return;
+  }
+  document.getElementById('lsa-start-date').value=start.toISOString().slice(0,10);
+  document.getElementById('lsa-end-date').value=end.toISOString().slice(0,10);
+}
+
+// ── Inline photo editing ──
+function lsaEditPhotos(el){
+  const id=el.dataset.id;
+  const current=el.textContent==='—'?'':el.textContent;
+  const inp=document.createElement('input');
+  inp.type='number';inp.min='0';inp.value=current;
+  inp.style.cssText='width:48px;padding:2px 4px;border:1px solid var(--blue);border-radius:4px;font-size:12px;font-family:var(--mono);text-align:center;outline:none';
+  inp.onblur=function(){
+    const val=parseInt(this.value)||0;
+    lsaUpdateManualField(id,'photos',val);
+    el.textContent=val;
+    el.style.color=val<5?'var(--red)':'var(--text)';
+    this.replaceWith(el);
+  };
+  inp.onkeydown=function(e){if(e.key==='Enter')this.blur();};
+  el.replaceWith(inp);
+  inp.focus();inp.select();
+}
+
+// ── Message lead toggle ──
+function lsaToggleMsgLead(id,checked){
+  lsaUpdateManualField(id,'message_lead',checked);
+}
+
+// ── Store manual fields (photos, message_lead) in localStorage ──
+function lsaUpdateManualField(accountId,field,value){
+  const key='pwmp_lsa_manual_fields';
+  let data={};try{data=JSON.parse(localStorage.getItem(key)||'{}');}catch{}
+  if(!data[accountId])data[accountId]={};
+  data[accountId][field]=value;
+  localStorage.setItem(key,JSON.stringify(data));
+  // Also update current report data if loaded
+  if(lsaCurrentData&&lsaCurrentData.accounts){
+    const acct=lsaCurrentData.accounts.find(a=>a.lsa_customer_id===accountId);
+    if(acct)acct[field]=value;
+  }
+}
+
+// ── Load manual fields into report data ──
+function lsaApplyManualFields(accounts){
+  const key='pwmp_lsa_manual_fields';
+  let data={};try{data=JSON.parse(localStorage.getItem(key)||'{}');}catch{}
+  for(const acct of accounts){
+    const manual=data[acct.lsa_customer_id];
+    if(manual){
+      if(manual.photos!=null)acct.photos=manual.photos;
+      if(manual.message_lead!=null)acct.message_lead=manual.message_lead;
+    }
+  }
 }
 
 </script>
