@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSA Operations · PWMP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f4f6f9;--surface:#fff;--surface2:#f0f2f6;--border:#e2e6ed;--border2:#cdd3df;
+  --text:#1a2035;--muted:#6b7a99;--accent:#c0392b;--accent2:#a93226;
+  --blue:#1a56b0;--blue2:#1346a0;--green:#16a34a;--yellow:#d97706;
+  --red:#dc2626;--teal:#0d9488;--purple:#7c3aed;
+  --font:'Inter',sans-serif;--mono:'DM Mono',monospace;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+  --shadow2:0 4px 16px rgba(0,0,0,0.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-icon{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#c0392b,#e74c3c);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:#fff}
+.header h1{font-size:17px;font-weight:700;color:#fff;letter-spacing:-.02em}
+.header .sub{font-size:11px;color:#94a3b8}
+.api-pills{display:flex;gap:8px}
+.api-pill{padding:4px 10px;border-radius:5px;font-size:10px;font-weight:600;font-family:var(--mono);display:flex;align-items:center;gap:5px}
+.api-pill.ok{background:rgba(22,163,74,.12);color:#4ade80}
+.api-pill.err{background:rgba(220,38,38,.12);color:#f87171}
+.api-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* LAYOUT */
+.container{max-width:100%;padding:20px 28px}
+
+/* CONTROLS */
+.controls{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.controls-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.ctrl-group label{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.ctrl-group input,.ctrl-group select{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:7px 11px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;transition:border-color .15s}
+.ctrl-group input:focus,.ctrl-group select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,176,.1)}
+.presets{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.presets span{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:4px}
+.preset-btn{padding:3px 10px;border:1px solid var(--border2);border-radius:5px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);cursor:pointer;font-family:var(--font);transition:all .15s}
+.preset-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--blue)}
+
+/* BUTTONS */
+.btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s;border:1px solid var(--border2);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:6px;box-shadow:var(--shadow)}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(192,57,43,.25)}
+.btn.primary:hover{background:var(--accent2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;box-shadow:var(--shadow)}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:700;font-family:var(--mono);line-height:1}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.stat-card.a-blue{border-top:3px solid var(--blue)}.stat-card.a-blue .stat-value{color:var(--blue)}
+.stat-card.a-green{border-top:3px solid var(--green)}.stat-card.a-green .stat-value{color:var(--green)}
+.stat-card.a-teal{border-top:3px solid var(--teal)}.stat-card.a-teal .stat-value{color:var(--teal)}
+.stat-card.a-purple{border-top:3px solid var(--purple)}.stat-card.a-purple .stat-value{color:var(--purple)}
+.stat-card.a-red{border-top:3px solid var(--red)}.stat-card.a-red .stat-value{color:var(--red)}
+.stat-card.a-yellow{border-top:3px solid var(--yellow)}.stat-card.a-yellow .stat-value{color:var(--yellow)}
+
+/* FILTER */
+.filter-bar{display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:200px;max-width:320px;position:relative}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted)}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:7px 11px 7px 32px;font-size:12px;font-family:var(--font);color:var(--text);outline:none;box-shadow:var(--shadow)}
+.search-input:focus{border-color:var(--blue)}
+select.fsel{background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:7px 26px 7px 10px;font-size:11px;font-family:var(--font);color:var(--text);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;box-shadow:var(--shadow)}
+.filter-count{font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:auto}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.table-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.table-bar .title{font-size:13px;font-weight:600}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{padding:8px 10px;text-align:left;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
+th:hover{color:var(--text)}
+th .sa{margin-left:3px;opacity:.4;font-size:9px}
+th.sorted .sa{opacity:1;color:var(--blue)}
+td{padding:9px 10px;font-size:12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{transition:background .1s;cursor:pointer}
+tbody tr:hover{background:#f8f9ff}
+tbody tr:last-child td{border-bottom:none}
+.mono{font-family:var(--mono)}
+
+/* CHIPS */
+.chip{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;font-family:var(--mono)}
+.chip-green{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.chip-amber{background:#fef9c3;color:#a16207;border:1px solid #fde68a}
+.chip-red{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+.chip-blue{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.chip-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border2)}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;overflow-y:auto}
+.modal-bg.open{display:block}
+.modal{background:var(--surface);max-width:800px;margin:40px auto;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.2);border:1px solid var(--border);overflow:hidden}
+.modal-head{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.modal-head h2{font-size:16px;font-weight:700}
+.modal-head .period{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.modal-body{padding:20px 24px}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mg2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.mm{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.mm-k{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.mm-v{font-size:15px;font-weight:600;font-family:var(--mono)}
+
+/* NOTES */
+.note-field{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 8px;resize:vertical;outline:none;transition:border-color .15s}
+.note-field:focus{border-color:var(--blue)}
+
+/* TOGGLE */
+.toggle{width:30px;height:17px;border-radius:9px;position:relative;cursor:pointer;transition:background .2s;display:inline-block;vertical-align:middle}
+.toggle.on{background:#22c55e}
+.toggle.off{background:#d1d5db}
+.toggle-dot{position:absolute;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.toggle.on .toggle-dot{left:15px}
+.toggle.off .toggle-dot{left:2px}
+
+/* EDITABLE */
+.editable{cursor:pointer;border-bottom:1px dashed var(--border2);padding:0 2px}
+.editable:hover{background:rgba(26,86,176,.06)}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TABS */
+.tabs{display:flex;gap:3px;background:var(--surface2);padding:3px;border-radius:8px;margin-bottom:16px;width:fit-content;border:1px solid var(--border)}
+.tab{padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;font-family:var(--font);transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow);border:1px solid var(--border)}
+
+/* ALERT */
+.alert{padding:10px 16px;border-radius:8px;font-size:12px;margin-bottom:14px;display:none}
+.alert.show{display:block}
+.alert.warn{background:#fefce8;border:1px solid #fde68a;color:#92400e}
+.alert.err{background:#fee2e2;border:1px solid #fecaca;color:var(--red)}
+.alert.ok{background:#dcfce7;border:1px solid #bbf7d0;color:#15803d}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.controls-row{flex-direction:column;align-items:stretch}.search-wrap{max-width:100%}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-icon">L</div>
+    <div>
+      <h1>LSA Operations</h1>
+      <div class="sub">Local Services Ads · Monitoring & Reporting</div>
+    </div>
+  </div>
+  <div class="api-pills" id="api-pills">
+    <div class="api-pill ok"><div class="api-dot"></div>Google Ads API</div>
+    <div class="api-pill ok"><div class="api-dot"></div>LSA API</div>
+    <div class="api-pill ok"><div class="api-dot"></div>WhatConverts API</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('report',this)">Report</button>
+    <button class="tab" onclick="switchTab('settings',this)">Account Settings</button>
+    <button class="tab" onclick="switchTab('alerts',this)">Alerts & Issues <span id="alert-badge" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px"></span></button>
+  </div>
+
+  <!-- REPORT TAB -->
+  <div id="tab-report">
+    <!-- Controls -->
+    <div class="controls">
+      <div class="controls-row">
+        <div class="ctrl-group">
+          <label>Start Date</label>
+          <input type="date" id="start-date">
+        </div>
+        <div class="ctrl-group">
+          <label>End Date</label>
+          <input type="date" id="end-date">
+        </div>
+        <div class="ctrl-group">
+          <label>Assigned To</label>
+          <select id="assigned-to">
+            <option value="all">All Team Members</option>
+          </select>
+        </div>
+        <button class="btn primary" onclick="generateReport()" id="gen-btn">Generate Report</button>
+        <button class="btn" onclick="exportCSV()" id="export-btn" style="display:none">Export CSV</button>
+      </div>
+      <div class="presets">
+        <span>Quick:</span>
+        <button class="preset-btn" onclick="setPreset('thisWeek')">This Week</button>
+        <button class="preset-btn" onclick="setPreset('lastWeek')">Last Week</button>
+        <button class="preset-btn" onclick="setPreset('last7')">Last 7 Days</button>
+        <button class="preset-btn" onclick="setPreset('last14')">Last 14 Days</button>
+        <button class="preset-btn" onclick="setPreset('last30')">Last 30 Days</button>
+        <button class="preset-btn" onclick="setPreset('thisMonth')">This Month</button>
+        <button class="preset-btn" onclick="setPreset('lastMonth')">Last Month</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row" style="display:none"></div>
+
+    <!-- Alert Banner -->
+    <div class="alert" id="report-alert"></div>
+
+    <!-- Filter -->
+    <div class="filter-bar" id="filter-bar" style="display:none">
+      <div class="search-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg>
+        <input type="text" class="search-input" placeholder="Search accounts…" id="search" oninput="renderTable()">
+      </div>
+      <select class="fsel" id="filter-status" onchange="renderTable()">
+        <option value="">All statuses</option>
+        <option value="ok">OK</option>
+        <option value="issues">Has issues</option>
+      </select>
+      <select class="fsel" id="filter-insurance" onchange="renderTable()">
+        <option value="">All insurance</option>
+        <option value="current">Current</option>
+        <option value="expiring">Expiring</option>
+        <option value="expired">Expired</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;padding:5px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:7px">
+        <input type="checkbox" id="hide-zero" onchange="renderTable()" style="accent-color:var(--accent)">Hide zero leads
+      </label>
+      <div class="filter-count" id="filter-count"></div>
+    </div>
+
+    <!-- Table -->
+    <div id="table-area">
+      <div class="empty" id="empty-state">
+        <div style="font-size:40px;margin-bottom:16px;opacity:.3">📊</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Select a date range to generate report</div>
+        <div style="font-size:13px">Data pulls from LSA, Google Ads & WhatConverts APIs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="tab-settings" style="display:none">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow)">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Account Management</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Select which accounts to include in reports. Accounts are auto-pulled from your MCC.</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn" onclick="selectAll(true)">Select All</button>
+        <button class="btn" onclick="selectAll(false)">Deselect All</button>
+      </div>
+      <div id="acct-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px"></div>
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px">Manual Data Fields</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">
+          <strong>Photos</strong> and <strong>Message Lead</strong> require manual updates (not available via API). 
+          Edit them directly in the report table — click the photo number or toggle the message lead switch. 
+          All other metrics are pulled automatically.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTS TAB -->
+  <div id="tab-alerts" style="display:none">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow)">
+      <div style="font-size:16px;font-weight:700;margin-bottom:16px">Active Alerts & Issues</div>
+      <div id="alerts-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="modal-name"></h2>
+        <div class="period" id="modal-period"></div>
+      </div>
+      <button class="btn" onclick="closeModal()">Close</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA STORE
+// ═══════════════════════════════════════
+const STORE_KEY = 'pwmp_lsa_ops_data';
+const MANUAL_KEY = 'pwmp_lsa_manual_fields';
+const NOTES_KEY = 'pwmp_lsa_notes';
+const SELECTED_KEY = 'pwmp_lsa_selected';
+
+let currentData = null;
+let currentPeriod = '';
+let allAccounts = [];
+let selectedAccounts = new Set();
+
+// Sample data for demonstration
+function getSampleAccounts() {
+  return [
+    { display_name:"Back In Time Pressure Washing", lsa_customer_id:"1001", charged_leads:11, not_charged_leads:3, wc_unique_leads:8, wc_repeat_leads:2, wc_total_leads:10, phone_responsiveness:78, reviews_count:546, average_rating:5, weekly_budget:6000, lead_spent:1247.50, ad_impressions:4521, top_impression_rate:32.4, abs_top_impression_rate:18.7, billing_status:"complete", insurance_status:"current", insurance_details:"COI expires 09/15/2026", insurance_expiry_warning:false, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Pressure Washing"], photos:14, message_lead:true, ad_schedule:"Mon-Fri 6AM-8PM", service_areas:["Baltimore MD","Towson MD","Columbia MD","Ellicott City MD"], lead_categories:{"xcat:service_area_business_pressure_washing":11}, compliance_issues:[], compliance_issue_count:0, wc_warnings:[] },
+    { display_name:"Baltimore Pressure Washers", lsa_customer_id:"1002", charged_leads:1, not_charged_leads:0, wc_unique_leads:1, wc_repeat_leads:0, wc_total_leads:1, phone_responsiveness:81, reviews_count:219, average_rating:5, weekly_budget:8000, lead_spent:312, ad_impressions:2103, top_impression_rate:28.1, abs_top_impression_rate:14.2, billing_status:"complete", insurance_status:"expiring", insurance_details:"COI expires in 15 days (04/21/2026)", insurance_expiry_warning:true, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Window Cleaning"], photos:1, message_lead:false, ad_schedule:"24/7", service_areas:["Baltimore MD","Dundalk MD"], lead_categories:{}, compliance_issues:[{details:"Insurance expiring soon"},{details:"Low photo count: 1"}], compliance_issue_count:2, wc_warnings:[] },
+    { display_name:"Bellows Window Cleaning", lsa_customer_id:"1003", charged_leads:3, not_charged_leads:0, wc_unique_leads:0, wc_repeat_leads:0, wc_total_leads:0, phone_responsiveness:94, reviews_count:253, average_rating:5, weekly_budget:270, lead_spent:810, ad_impressions:3287, top_impression_rate:41.2, abs_top_impression_rate:22.8, billing_status:"complete", insurance_status:"current", insurance_details:"COI expires 11/30/2026", insurance_expiry_warning:false, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Window Cleaning"], photos:3, message_lead:true, ad_schedule:"Mon-Sat 7AM-7PM", service_areas:["Arlington VA","Falls Church VA","Alexandria VA"], lead_categories:{}, compliance_issues:[{details:"Zero WC leads"},{details:"Low photo count: 3"}], compliance_issue_count:2, wc_warnings:["Zero WhatConverts leads for this period"] },
+    { display_name:"Castle Window Cleaning & Power Washing", lsa_customer_id:"1004", charged_leads:5, not_charged_leads:0, wc_unique_leads:0, wc_repeat_leads:0, wc_total_leads:0, phone_responsiveness:85, reviews_count:235, average_rating:5, weekly_budget:700, lead_spent:1540, ad_impressions:5102, top_impression_rate:35.6, abs_top_impression_rate:19.4, billing_status:"complete", insurance_status:"current", insurance_details:"COI expires 10/01/2026", insurance_expiry_warning:false, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Window Cleaning","Pressure Washing"], photos:1, message_lead:true, ad_schedule:"Mon-Fri 8AM-6PM", service_areas:["Annapolis MD","Severna Park MD","Pasadena MD","Glen Burnie MD"], lead_categories:{}, compliance_issues:[{details:"Zero WC leads"},{details:"Low photo count: 1"}], compliance_issue_count:2, wc_warnings:["Zero WhatConverts leads for this period"] },
+    { display_name:"Crystal Clear Power Wash", lsa_customer_id:"1005", charged_leads:7, not_charged_leads:2, wc_unique_leads:5, wc_repeat_leads:1, wc_total_leads:6, phone_responsiveness:92, reviews_count:312, average_rating:5, weekly_budget:3500, lead_spent:2100, ad_impressions:6340, top_impression_rate:45.3, abs_top_impression_rate:28.1, billing_status:"complete", insurance_status:"current", insurance_details:"COI expires 01/15/2027", insurance_expiry_warning:false, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Pressure Washing","Soft Washing"], photos:22, message_lead:true, ad_schedule:"Mon-Sun 6AM-9PM", service_areas:["Richmond VA","Henrico VA","Chesterfield VA"], lead_categories:{"xcat:service_area_business_pressure_washing":7}, compliance_issues:[], compliance_issue_count:0, wc_warnings:[] },
+    { display_name:"Diamond Exterior Solutions", lsa_customer_id:"1006", charged_leads:0, not_charged_leads:0, wc_unique_leads:0, wc_repeat_leads:0, wc_total_leads:0, phone_responsiveness:45, reviews_count:87, average_rating:4.8, weekly_budget:1500, lead_spent:0, ad_impressions:312, top_impression_rate:5.2, abs_top_impression_rate:1.1, billing_status:"incomplete", insurance_status:"expired", insurance_details:"COI expired (01/15/2026)", insurance_expiry_warning:true, background_check_status:"pending", background_check_details:"", gbp_link_status:"incomplete", gbp_link_details:"", job_types:["Pressure Washing"], photos:0, message_lead:false, ad_schedule:"Not Set", service_areas:["Washington DC"], lead_categories:{}, compliance_issues:[{details:"Zero leads"},{details:"Insurance expired"},{details:"BG check pending"},{details:"GBP incomplete"},{details:"Low responsiveness: 45%"},{details:"No photos"},{details:"Billing incomplete"}], compliance_issue_count:7, wc_warnings:[] },
+    { display_name:"Eagle Eye Window Care", lsa_customer_id:"1007", charged_leads:4, not_charged_leads:1, wc_unique_leads:3, wc_repeat_leads:0, wc_total_leads:3, phone_responsiveness:88, reviews_count:178, average_rating:5, weekly_budget:2000, lead_spent:980, ad_impressions:3890, top_impression_rate:38.7, abs_top_impression_rate:21.3, billing_status:"complete", insurance_status:"current", insurance_details:"COI expires 08/20/2026", insurance_expiry_warning:false, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Window Cleaning","Gutter Cleaning"], photos:9, message_lead:true, ad_schedule:"Mon-Fri 7AM-7PM", service_areas:["Frederick MD","Hagerstown MD","Westminster MD"], lead_categories:{}, compliance_issues:[], compliance_issue_count:0, wc_warnings:[] },
+    { display_name:"Fresh Start Exterior Cleaning", lsa_customer_id:"1008", charged_leads:9, not_charged_leads:1, wc_unique_leads:6, wc_repeat_leads:3, wc_total_leads:9, phone_responsiveness:96, reviews_count:421, average_rating:5, weekly_budget:5000, lead_spent:3200, ad_impressions:8920, top_impression_rate:52.1, abs_top_impression_rate:33.4, billing_status:"complete", insurance_status:"current", insurance_details:"COI expires 12/01/2026", insurance_expiry_warning:false, background_check_status:"complete", background_check_details:"", gbp_link_status:"complete", gbp_link_details:"", job_types:["Pressure Washing","Roof Cleaning","Soft Washing"], photos:31, message_lead:true, ad_schedule:"Mon-Sun 5AM-10PM", service_areas:["Philadelphia PA","King of Prussia PA","Norristown PA","Conshohocken PA"], lead_categories:{"xcat:service_area_business_pressure_washing":9}, compliance_issues:[], compliance_issue_count:0, wc_warnings:[] },
+  ];
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const now = new Date(), day = now.getDay();
+  const lastMon = new Date(now); lastMon.setDate(now.getDate()-((day+6)%7)-7);
+  const lastSun = new Date(lastMon); lastSun.setDate(lastMon.getDate()+6);
+  document.getElementById('start-date').value = lastMon.toISOString().slice(0,10);
+  document.getElementById('end-date').value = lastSun.toISOString().slice(0,10);
+
+  // Load saved selections
+  try { const s=JSON.parse(localStorage.getItem(SELECTED_KEY)||'[]'); selectedAccounts=new Set(s); } catch{}
+  // Load saved report
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if (saved) { currentData=saved.data; currentPeriod=saved.period; document.getElementById('start-date').value=saved.start; document.getElementById('end-date').value=saved.end; showReport(); }
+  } catch{}
+});
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['report','settings','alerts'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===id ? 'block' : 'none';
+  });
+  if (id==='settings') renderSettings();
+  if (id==='alerts') renderAlerts();
+}
+
+// ═══════════════════════════════════════
+// DATE PRESETS
+// ═══════════════════════════════════════
+function setPreset(p) {
+  const now = new Date();
+  let s, e = new Date(now);
+  switch(p) {
+    case 'thisWeek': s=new Date(now);s.setDate(now.getDate()-now.getDay()+1);break;
+    case 'lastWeek': s=new Date(now);s.setDate(now.getDate()-now.getDay()-6);e=new Date(s);e.setDate(s.getDate()+6);break;
+    case 'last7': s=new Date(now);s.setDate(now.getDate()-7);break;
+    case 'last14': s=new Date(now);s.setDate(now.getDate()-14);break;
+    case 'last30': s=new Date(now);s.setDate(now.getDate()-30);break;
+    case 'thisMonth': s=new Date(now.getFullYear(),now.getMonth(),1);break;
+    case 'lastMonth': s=new Date(now.getFullYear(),now.getMonth()-1,1);e=new Date(now.getFullYear(),now.getMonth(),0);break;
+    default:return;
+  }
+  document.getElementById('start-date').value = s.toISOString().slice(0,10);
+  document.getElementById('end-date').value = e.toISOString().slice(0,10);
+}
+
+// ═══════════════════════════════════════
+// GENERATE REPORT
+// ═══════════════════════════════════════
+function generateReport() {
+  const start = document.getElementById('start-date').value;
+  const end = document.getElementById('end-date').value;
+  if (!start||!end) { alert('Select dates'); return; }
+
+  // Use sample data (replace with API call when ready)
+  const accounts = getSampleAccounts();
+  applyManualFields(accounts);
+  
+  // Filter by selected accounts if any are selected
+  const filtered = selectedAccounts.size > 0
+    ? accounts.filter(a => selectedAccounts.has(a.lsa_customer_id))
+    : accounts;
+
+  currentData = { accounts: filtered, api_statuses: [
+    {name:'Google Ads API',status:'ok'},{name:'LSA API',status:'ok'},{name:'WhatConverts API',status:'ok'}
+  ]};
+  currentPeriod = start + ' to ' + end;
+
+  // Save
+  localStorage.setItem(STORE_KEY, JSON.stringify({ data:currentData, period:currentPeriod, start, end }));
+
+  allAccounts = accounts;
+  if (selectedAccounts.size === 0) accounts.forEach(a => selectedAccounts.add(a.lsa_customer_id));
+  saveSelected();
+
+  showReport();
+}
+
+function showReport() {
+  if (!currentData) return;
+  const accounts = currentData.accounts||[];
+  const start = document.getElementById('start-date').value;
+  const end = document.getElementById('end-date').value;
+
+  // Stats
+  const tc=accounts.reduce((s,a)=>s+(a.charged_leads||0),0);
+  const tnc=accounts.reduce((s,a)=>s+(a.not_charged_leads||0),0);
+  const twc=accounts.reduce((s,a)=>s+(a.wc_total_leads||0),0);
+  const tls=accounts.reduce((s,a)=>s+(a.lead_spent||0),0);
+  const ti=accounts.reduce((s,a)=>s+(a.ad_impressions||0),0);
+  const tb=accounts.reduce((s,a)=>s+(a.weekly_budget||0),0);
+  const ic=accounts.filter(a=>a.compliance_issue_count>0).length;
+  const ins=accounts.filter(a=>a.insurance_expiry_warning).length;
+
+  const sr=document.getElementById('stats-row');
+  sr.style.display='grid';
+  sr.innerHTML=`
+    <div class="stat-card a-blue"><div class="stat-label">Total Accounts</div><div class="stat-value">${accounts.length}</div><div class="stat-sub">in report</div></div>
+    <div class="stat-card a-green"><div class="stat-label">Charged Leads</div><div class="stat-value">${tc}</div><div class="stat-sub">${tnc} not charged</div></div>
+    <div class="stat-card a-teal"><div class="stat-label">WC Total Leads</div><div class="stat-value">${twc}</div><div class="stat-sub">across accounts</div></div>
+    <div class="stat-card a-purple"><div class="stat-label">Lead Spend</div><div class="stat-value">$${tls.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="stat-sub">${ti.toLocaleString()} impressions</div></div>
+    <div class="stat-card a-yellow"><div class="stat-label">Total Budget</div><div class="stat-value">$${tb.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="stat-sub">${Math.round(tls/Math.max(tb,1)*100)}% utilized</div></div>
+    <div class="stat-card a-red"><div class="stat-label">Needs Attention</div><div class="stat-value">${ic}</div><div class="stat-sub">${ins} insurance alerts</div></div>
+  `;
+
+  // Alert badge
+  document.getElementById('alert-badge').textContent = ic>0?ic:'';
+
+  // Alert banner
+  const ab = document.getElementById('report-alert');
+  if (ic > 0) { ab.className='alert warn show'; ab.textContent=`⚠ ${ic} account${ic>1?'s':''} need attention (zero leads, insurance expiring, compliance issues, or low metrics).`; }
+  else { ab.className='alert'; }
+
+  // Show filter & export
+  document.getElementById('filter-bar').style.display='flex';
+  document.getElementById('export-btn').style.display='inline-flex';
+  document.getElementById('empty-state').style.display='none';
+
+  renderTable();
+}
+
+// ═══════════════════════════════════════
+// TABLE RENDERING
+// ═══════════════════════════════════════
+let sortField=null, sortDir='asc';
+
+function renderTable() {
+  if (!currentData) return;
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const sf=document.getElementById('filter-status').value;
+  const insf=document.getElementById('filter-insurance').value;
+  const hz=document.getElementById('hide-zero').checked;
+
+  let accts = [...(currentData.accounts||[])];
+  if (q) accts=accts.filter(a=>a.display_name.toLowerCase().includes(q));
+  if (hz) accts=accts.filter(a=>(a.charged_leads||0)>0);
+  if (insf) accts=accts.filter(a=>a.insurance_status===insf);
+  if (sf==='ok') accts=accts.filter(a=>a.compliance_issue_count===0);
+  if (sf==='issues') accts=accts.filter(a=>a.compliance_issue_count>0);
+
+  if (sortField) {
+    accts.sort((a,b)=>{
+      let va=a[sortField],vb=b[sortField];
+      if(Array.isArray(va))va=va.length;if(Array.isArray(vb))vb=vb.length;
+      if(typeof va==='string')va=va.toLowerCase();if(typeof vb==='string')vb=vb.toLowerCase();
+      if(va<vb)return sortDir==='asc'?-1:1;if(va>vb)return sortDir==='asc'?1:-1;return 0;
+    });
+  }
+
+  document.getElementById('filter-count').textContent=accts.length+' accounts';
+
+  const chip=(v,t)=>`<span class="chip chip-${t}">${v}</span>`;
+  const insLbl=a=>{const s=(a.insurance_status||'').toLowerCase();if(s==='current')return chip('Current','green');if(s==='expiring')return chip('⚠ Expiring','amber');if(s==='expired')return chip('✗ Expired','red');return chip(a.insurance_status||'—','gray');};
+  const cstat=(v,ok)=>chip(v||'—',v===ok?'green':'amber');
+  const notes=getNotes();
+
+  const headers = [
+    {f:'display_name',l:'Account',w:'190px'},{f:'charged_leads',l:'Charged'},{f:'not_charged_leads',l:'Not Chgd'},
+    {f:'wc_unique_leads',l:'WC Uniq'},{f:'wc_repeat_leads',l:'WC Rpt'},{f:'wc_total_leads',l:'WC Total'},
+    {f:'phone_responsiveness',l:'Resp%'},{f:'reviews_count',l:'Reviews'},{f:'weekly_budget',l:'Budget'},
+    {f:'lead_spent',l:'Lead Spent'},{f:'ad_impressions',l:'Impr'},
+    {f:'top_impression_rate',l:'Top Imp%'},{f:'abs_top_impression_rate',l:'AbsTop%'},
+    {f:'billing_status',l:'Billing'},{f:'insurance_status',l:'Insurance',w:'130px'},
+    {f:'background_check_status',l:'BG Check'},{f:'gbp_link_status',l:'GBP'},
+    {f:'job_types',l:'Job Types'},{f:'photos',l:'Photos'},{f:'message_lead',l:'Msg Lead'},
+    {f:'compliance_issue_count',l:'Issues'},{l:'Notes',w:'170px'}
+  ];
+
+  const th = headers.map(h => {
+    const sorted = sortField===h.f;
+    return `<th${h.w?' style="min-width:'+h.w+'"':''}${h.f?' onclick="doSort(\''+h.f+'\')"':''} class="${sorted?'sorted':''}">
+      ${h.l}${h.f?`<span class="sa">${sorted?(sortDir==='asc'?'▲':'▼'):'↕'}</span>`:''}
+    </th>`;
+  }).join('');
+
+  const rows = accts.map(a => {
+    const sid=a.lsa_customer_id;
+    const nk=sid+'__'+currentPeriod;
+    const note=notes[nk]||'';
+    const cats=Object.entries(a.lead_categories||{}).map(([k,v])=>fmtCat(k)+': '+v).join(', ');
+    const mc=v=>`style="color:${v>0?'var(--green)':'var(--muted)'}"`; 
+
+    return `<tr onclick="openModal('${sid}')">
+      <td><div style="font-size:13px;font-weight:600;color:var(--accent)">${a.display_name}</div>${cats?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${cats}</div>`:''}</td>
+      <td class="mono" ${mc(a.charged_leads)}>${a.charged_leads??0}</td>
+      <td class="mono" style="color:${(a.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)'}">${a.not_charged_leads??0}</td>
+      <td class="mono" style="color:${(a.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)'}">${a.wc_unique_leads??0}</td>
+      <td class="mono" style="color:var(--muted)">${a.wc_repeat_leads??0}</td>
+      <td class="mono" ${mc(a.wc_total_leads)}>${a.wc_total_leads??0}</td>
+      <td class="mono" style="color:${(a.phone_responsiveness||100)<70?'var(--yellow)':'var(--text)'}">${a.phone_responsiveness!=null?a.phone_responsiveness+'%':'—'}</td>
+      <td class="mono">${a.reviews_count??'—'}${a.average_rating?` <span style="color:var(--yellow);font-size:10px">★${a.average_rating}</span>`:''}</td>
+      <td class="mono">${a.weekly_budget!=null?'$'+Number(a.weekly_budget).toLocaleString():'—'}</td>
+      <td class="mono" style="color:var(--purple)">${a.lead_spent!=null?'$'+Number(a.lead_spent).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>
+      <td class="mono">${a.ad_impressions!=null?Number(a.ad_impressions).toLocaleString():'—'}</td>
+      <td class="mono">${a.top_impression_rate!=null?a.top_impression_rate+'%':'—'}</td>
+      <td class="mono">${a.abs_top_impression_rate!=null?a.abs_top_impression_rate+'%':'—'}</td>
+      <td>${cstat(a.billing_status,'complete')}</td>
+      <td>${insLbl(a)}${a.insurance_details?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">${a.insurance_details}</div>`:''}</td>
+      <td>${cstat(a.background_check_status,'complete')}</td>
+      <td>${cstat(a.gbp_link_status,'complete')}</td>
+      <td style="font-size:11px;max-width:140px">${a.job_types?.length?a.job_types.join(', ')+' <span style="color:var(--muted)">('+a.job_types.length+')</span>':'—'}</td>
+      <td class="mono" onclick="event.stopPropagation()"><span class="editable" data-id="${sid}" onclick="editPhotos(this)" style="color:${(a.photos!=null&&a.photos<5)?'var(--red)':'var(--text)'}">${a.photos??'—'}</span></td>
+      <td onclick="event.stopPropagation()"><div class="toggle ${a.message_lead?'on':'off'}" onclick="toggleMsg('${sid}',this)"><div class="toggle-dot"></div></div></td>
+      <td>${a.compliance_issue_count>0?chip('⚠ '+a.compliance_issue_count,'amber'):chip('✓ OK','green')}</td>
+      <td onclick="event.stopPropagation()"><textarea class="note-field" rows="2" placeholder="Notes…" onchange="saveNote('${sid}','${currentPeriod.replace(/'/g,"\\'")}',this.value)">${note}</textarea></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-area').innerHTML = `
+    <div class="table-wrap">
+      <div class="table-bar">
+        <span class="title">Report: ${currentPeriod}</span>
+        <span class="mono" style="font-size:11px;color:var(--muted)">${accts.length} accounts</span>
+      </div>
+      <div class="tbl-scroll"><table><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
+    </div>`;
+}
+
+function doSort(f) {
+  if (sortField===f) sortDir=sortDir==='asc'?'desc':'asc';
+  else { sortField=f; sortDir='asc'; }
+  renderTable();
+}
+
+// ═══════════════════════════════════════
+// INLINE EDITING
+// ═══════════════════════════════════════
+function editPhotos(el) {
+  const id=el.dataset.id, cur=el.textContent==='—'?'':el.textContent;
+  const inp=document.createElement('input');
+  inp.type='number';inp.min='0';inp.value=cur;
+  inp.style.cssText='width:48px;padding:2px 4px;border:1px solid var(--blue);border-radius:4px;font-size:12px;font-family:var(--mono);text-align:center;outline:none';
+  inp.onblur=function(){ const v=parseInt(this.value)||0; saveManual(id,'photos',v); el.textContent=v; el.style.color=v<5?'var(--red)':'var(--text)'; this.replaceWith(el); };
+  inp.onkeydown=function(e){if(e.key==='Enter')this.blur();};
+  el.replaceWith(inp); inp.focus(); inp.select();
+}
+
+function toggleMsg(id, el) {
+  const isOn = el.classList.contains('on');
+  el.classList.toggle('on',!isOn);
+  el.classList.toggle('off',isOn);
+  saveManual(id,'message_lead',!isOn);
+}
+
+function saveManual(id,field,val) {
+  let d={}; try{d=JSON.parse(localStorage.getItem(MANUAL_KEY)||'{}');}catch{}
+  if(!d[id])d[id]={};
+  d[id][field]=val;
+  localStorage.setItem(MANUAL_KEY,JSON.stringify(d));
+  if(currentData?.accounts){const a=currentData.accounts.find(x=>x.lsa_customer_id===id);if(a)a[field]=val;}
+}
+
+function applyManualFields(accounts) {
+  let d={};try{d=JSON.parse(localStorage.getItem(MANUAL_KEY)||'{}');}catch{}
+  for(const a of accounts){
+    const m=d[a.lsa_customer_id];
+    if(m){if(m.photos!=null)a.photos=m.photos;if(m.message_lead!=null)a.message_lead=m.message_lead;}
+  }
+}
+
+// ═══════════════════════════════════════
+// NOTES
+// ═══════════════════════════════════════
+function getNotes(){try{return JSON.parse(localStorage.getItem(NOTES_KEY)||'{}');}catch{return{};}}
+function saveNote(id,period,val){const n=getNotes();n[id+'__'+period]=val;localStorage.setItem(NOTES_KEY,JSON.stringify(n));}
+
+// ═══════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════
+function openModal(id) {
+  const a=(currentData?.accounts||[]).find(x=>x.lsa_customer_id===id);
+  if(!a)return;
+  document.getElementById('modal-name').textContent=a.display_name;
+  document.getElementById('modal-period').textContent=currentPeriod;
+
+  const mm=(k,v,c)=>`<div class="mm"><div class="mm-k">${k}</div><div class="mm-v"${c?' style="color:'+c+'"':''}>${v??'—'}</div></div>`;
+  const ic=s=>({current:'var(--green)',expiring:'var(--yellow)',expired:'var(--red)'}[s]||'var(--muted)');
+  const notes=getNotes();
+  const nk=a.lsa_customer_id+'__'+currentPeriod;
+
+  let html=`<div class="mg">
+    ${mm('Charged Leads',a.charged_leads,(a.charged_leads||0)>0?'var(--green)':'var(--muted)')}
+    ${mm('Not Charged',a.not_charged_leads,(a.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')}
+    ${mm('WC Unique',a.wc_unique_leads,(a.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')}
+    ${mm('WC Repeat',a.wc_repeat_leads)}
+    ${mm('WC Total',a.wc_total_leads,(a.wc_total_leads||0)>0?'var(--green)':'var(--muted)')}
+    ${mm('Responsiveness',a.phone_responsiveness!=null?a.phone_responsiveness+'%':'—',(a.phone_responsiveness||100)<70?'var(--yellow)':null)}
+    ${mm('Reviews',a.reviews_count!=null?a.reviews_count+(a.average_rating?' (★'+a.average_rating+')':''):'—')}
+    ${mm('Budget',a.weekly_budget!=null?'$'+Number(a.weekly_budget).toLocaleString():'—')}
+    ${mm('Lead Spent',a.lead_spent!=null?'$'+Number(a.lead_spent).toFixed(2):'—','var(--purple)')}
+    ${mm('Ad Impressions',a.ad_impressions!=null?Number(a.ad_impressions).toLocaleString():'—')}
+    ${mm('Top Impression %',a.top_impression_rate!=null?a.top_impression_rate+'%':'—')}
+    ${mm('Abs Top %',a.abs_top_impression_rate!=null?a.abs_top_impression_rate+'%':'—')}
+    ${mm('Photos',a.photos??'—',(a.photos!=null&&a.photos<5)?'var(--red)':null)}
+    ${mm('Message Lead',a.message_lead?'Enabled':'Disabled',a.message_lead?'var(--green)':'var(--muted)')}
+    ${mm('LSA ID',a.lsa_customer_id)}
+  </div>`;
+
+  html+=`<div class="mg2">
+    ${mm('Insurance<br><span style="font-size:10px;color:var(--muted)">'+(a.insurance_details||'')+'</span>',a.insurance_status||'—',ic(a.insurance_status))}
+    ${mm('Billing',a.billing_status||'—',a.billing_status==='complete'?'var(--green)':'var(--yellow)')}
+    ${mm('Background Check',a.background_check_status||'—',a.background_check_status==='complete'?'var(--green)':'var(--yellow)')}
+    ${mm('Google Business Profile',a.gbp_link_status||'—',a.gbp_link_status==='complete'?'var(--green)':'var(--yellow)')}
+  </div>`;
+
+  if(a.job_types?.length) html+=`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Job Types (${a.job_types.length})</div><div style="display:flex;flex-wrap:wrap;gap:5px">${a.job_types.map(j=>`<span class="chip chip-blue">${j}</span>`).join('')}</div></div>`;
+  if(a.service_areas?.length) html+=`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Service Areas (${a.service_areas.length})</div><div style="display:flex;flex-wrap:wrap;gap:5px">${a.service_areas.map(s=>`<span class="chip chip-blue">${s}</span>`).join('')}</div></div>`;
+  if(a.ad_schedule) html+=`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Ad Schedule</div><div class="mono" style="font-size:12px">${a.ad_schedule}</div></div>`;
+
+  if((a.charged_leads||0)>0) html+=`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Performance</div><div class="mg">${mm('Cost per Lead','$'+((a.lead_spent||0)/(a.charged_leads||1)).toFixed(2))}${mm('Budget Util',a.weekly_budget?Math.round(((a.lead_spent||0)/(a.weekly_budget||1))*100)+'%':'—')}${mm('Imp→Lead',a.ad_impressions?((a.charged_leads/(a.ad_impressions||1))*100).toFixed(3)+'%':'—')}</div></div>`;
+
+  if(a.compliance_issues?.length) html+=`<div style="margin-bottom:14px;padding:10px 12px;background:#fee2e2;border-radius:8px;border-left:3px solid var(--red)">${a.compliance_issues.map(c=>`<div style="font-size:11px;color:var(--red);margin-bottom:2px">✗ ${c.details}</div>`).join('')}</div>`;
+  if(a.wc_warnings?.length) html+=`<div style="margin-bottom:14px;padding:10px 12px;background:#fefce8;border-radius:8px;border-left:3px solid var(--yellow)">${a.wc_warnings.map(w=>`<div style="font-size:11px;color:#92400e">⚠ ${w}</div>`).join('')}</div>`;
+
+  html+=`<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes</div><textarea class="note-field" rows="4" style="width:100%" placeholder="Optimization notes…" onchange="saveNote('${a.lsa_customer_id}','${currentPeriod.replace(/'/g,"\\'")}',this.value)">${notes[nk]||''}</textarea></div>`;
+
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open');document.body.style.overflow='';}
+
+// ═══════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════
+function renderSettings() {
+  const accts = allAccounts.length ? allAccounts : getSampleAccounts();
+  const grid = document.getElementById('acct-grid');
+  grid.innerHTML = accts.map(a => {
+    const sel = selectedAccounts.has(a.lsa_customer_id);
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'rgba(192,57,43,.04)':'var(--surface2)'};cursor:pointer;transition:all .15s" onclick="toggleAcct('${a.lsa_customer_id}')">
+      <input type="checkbox" ${sel?'checked':''} style="accent-color:var(--accent);width:14px;height:14px;cursor:pointer" onclick="event.stopPropagation();toggleAcct('${a.lsa_customer_id}')">
+      <div>
+        <div style="font-size:12px;font-weight:600">${a.display_name}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px">${a.lsa_customer_id} · ${(a.job_types||[]).join(', ')||'—'}</div>
+      </div>
+      ${a.compliance_issue_count>0?`<span class="chip chip-amber" style="margin-left:auto">${a.compliance_issue_count}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function toggleAcct(id){if(selectedAccounts.has(id))selectedAccounts.delete(id);else selectedAccounts.add(id);saveSelected();renderSettings();}
+function selectAll(v){const accts=allAccounts.length?allAccounts:getSampleAccounts();if(v)accts.forEach(a=>selectedAccounts.add(a.lsa_customer_id));else selectedAccounts.clear();saveSelected();renderSettings();}
+function saveSelected(){localStorage.setItem(SELECTED_KEY,JSON.stringify([...selectedAccounts]));}
+
+// ═══════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════
+function renderAlerts() {
+  const accts = (currentData?.accounts||[]).filter(a=>a.compliance_issue_count>0);
+  const el = document.getElementById('alerts-list');
+  if(!accts.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--green)"><div style="font-size:28px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:600">All accounts are healthy!</div><div style="font-size:12px;color:var(--muted);margin-top:4px">No issues detected.</div></div>';return;}
+  el.innerHTML=accts.sort((a,b)=>b.compliance_issue_count-a.compliance_issue_count).map(a=>`
+    <div style="padding:14px 18px;border-radius:8px;border:1px solid ${a.compliance_issue_count>=3?'#fecaca':'#fde68a'};background:${a.compliance_issue_count>=3?'#fef2f2':'#fffbeb'};margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:700">${a.display_name}</span>
+        <span class="chip chip-${a.compliance_issue_count>=3?'red':'amber'}">${a.compliance_issue_count} issue${a.compliance_issue_count>1?'s':''}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${a.compliance_issues.map(i=>`<span class="chip chip-${i.details.includes('expired')||i.details.includes('Zero')||i.details.includes('Billing')?'red':'amber'}">${i.details}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════
+function exportCSV() {
+  if(!currentData)return;
+  const h=['Account','LSA ID','Charged','Not Charged','WC Unique','WC Repeat','WC Total','Responsiveness %','Reviews','Rating','Budget','Lead Spent','Ad Impressions','Top Impression %','Abs Top Impression %','Insurance','Insurance Details','Billing','BG Check','GBP','Job Types','Photos','Message Lead','Ad Schedule','Service Areas','Issues','Notes'];
+  const notes=getNotes();
+  const rows=(currentData.accounts||[]).map(a=>{
+    const nk=a.lsa_customer_id+'__'+currentPeriod;
+    return[`"${a.display_name}"`,a.lsa_customer_id,a.charged_leads??0,a.not_charged_leads??0,a.wc_unique_leads??0,a.wc_repeat_leads??0,a.wc_total_leads??0,a.phone_responsiveness??'',a.reviews_count??'',a.average_rating??'',a.weekly_budget??'',a.lead_spent??'',a.ad_impressions??'',a.top_impression_rate??'',a.abs_top_impression_rate??'',`"${a.insurance_status||''}"`,`"${a.insurance_details||''}"`,`"${a.billing_status||''}"`,`"${a.background_check_status||''}"`,`"${a.gbp_link_status||''}"`,`"${(a.job_types||[]).join('; ')}"`,a.photos??'',a.message_lead?'Enabled':'Disabled',`"${a.ad_schedule||''}"`,`"${(a.service_areas||[]).join('; ')}"`,a.compliance_issue_count||0,`"${(notes[nk]||'').replace(/"/g,'""')}"`].join(',');
+  });
+  const csv=[h.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='lsa-operations-'+currentPeriod.replace(/ /g,'-')+'.csv';a.click();URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function fmtCat(k){return(k||'').replace('xcat:service_area_business_','').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+</script>
+</body>
+</html>
