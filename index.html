@@ -1114,7 +1114,7 @@ async function lsaGenerate(){
   try{
     const token=localStorage.getItem(LSA_AUTH_KEY)||'';
     const resp=await fetch(LSA_API,{method:'POST',headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},body:JSON.stringify({start_date:start,end_date:end,assigned_to:null})});
-    if(resp.status===401){lsaShowAuthPrompt(start,end);return;}
+    if(resp.status===401){throw new Error('Token invalid or expired. Check LSA_BEARER_TOKEN in Vercel Environment Variables.');}
     if(!resp.ok)throw new Error('API '+resp.status);
     const data=await resp.json();if(!data.success)throw new Error('API error');
     lsaCurrentData=data;lsaCurrentPeriod=start+' to '+end;
