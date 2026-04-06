@@ -245,21 +245,10 @@ textarea.lsa-paste:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,8
       Onboarding check
     </div>
     <div class="nav-section">LSA Operations</div>
-    <div class="nav-item" onclick="showView('lsa-dashboard')" id="nav-lsa-dashboard">
+    <div class="nav-item" onclick="showView('lsa-weekly')" id="nav-lsa-weekly">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
-      LSA Dashboard <span class="nav-badge" id="nav-lsa-count">—</span>
-    </div>
-    <div class="nav-item" onclick="showView('lsa-entry')" id="nav-lsa-entry">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
-      Add weekly data
-    </div>
-    <div class="nav-item" onclick="showView('lsa-accounts')" id="nav-lsa-accounts">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
-      Account history
-    </div>
-    <div class="nav-item" onclick="showView('lsa-mcc')" id="nav-lsa-mcc">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="8" r="3"/><circle cx="11" cy="4" r="2"/><circle cx="11" cy="12" r="2"/><path d="M8 8h1M8.5 4.5l-1 2M8.5 11.5l-1-2"/></svg>
-      MCC Accounts
+      LSA Weekly
+      <span class="nav-badge" id="nav-lsa-badge">—</span>
     </div>
     <div class="nav-section">Campaign Ops</div>
     <div class="nav-item coming"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M3 4h10M3 12h6"/></svg>New campaigns<span class="coming-pill">Soon</span></div>
@@ -531,6 +520,104 @@ textarea.lsa-paste:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,8
   </div>
 </div>
 
+<div id="view-lsa-weekly" class="view">
+  <div class="topbar">
+    <div>
+      <div class="page-title">LSA Weekly Report</div>
+      <div class="page-sub" id="lsa-report-sub">Select a date range and generate report</div>
+    </div>
+    <div class="topbar-actions">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Start date</label>
+          <input type="date" id="lsa-start-date" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;cursor:pointer"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <label style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">End date</label>
+          <input type="date" id="lsa-end-date" style="background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;cursor:pointer"/>
+        </div>
+        <button class="btn primary" onclick="lsaGenerate()" id="lsa-gen-btn" style="align-self:flex-end">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M3 8a5 5 0 009.9-1M13 8a5 5 0 01-9.9 1"/><path d="M11 5l2 2-2 2M5 9l-2 2 2 2"/></svg>
+          Generate Report
+        </button>
+        <button class="btn" onclick="lsaExportWeekly()" id="lsa-export-btn" style="align-self:flex-end;display:none">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M8 2v8M5 7l3 3 3-3M3 12h10"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  
+  <div id="lsa-api-bar" style="display:none;padding:8px 28px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;font-size:11px;font-family:var(--mono)"></div>
+
+  
+  <div class="page-content">
+    <div id="lsa-weekly-stats" style="display:none">
+      <div class="stats-row" id="lsa-stat-cards"></div>
+    </div>
+
+    
+    <div id="lsa-filter-bar" style="display:none;margin-bottom:16px">
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg>
+          <input type="text" class="search-input" placeholder="Search accounts…" id="lsa-search" oninput="lsaFilterRender()">
+        </div>
+        <select class="filter-select" id="lsa-filter-status" onchange="lsaFilterRender()">
+          <option value="">All statuses</option>
+          <option value="ok">OK</option>
+          <option value="attention">Needs attention</option>
+        </select>
+        <select class="filter-select" id="lsa-filter-insurance" onchange="lsaFilterRender()">
+          <option value="">All insurance</option>
+          <option value="current">Current</option>
+          <option value="expiring">Expiring</option>
+          <option value="expired">Expired</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;padding:6px 10px;background:var(--surface);border:1px solid var(--border2);border-radius:7px">
+          <input type="checkbox" id="lsa-filter-zero" onchange="lsaFilterRender()" style="accent-color:var(--accent)">
+          Hide zero leads
+        </label>
+      </div>
+    </div>
+
+    
+    <div id="lsa-weekly-table-wrap" class="table-wrap" style="display:none">
+      <div class="table-header-row">
+        <span class="table-title" id="lsa-table-title">Accounts</span>
+        <span class="table-count" id="lsa-table-count">—</span>
+      </div>
+      <div id="lsa-weekly-table-body"></div>
+    </div>
+
+    
+    <div id="lsa-weekly-empty">
+      <div style="text-align:center;padding:80px 20px;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:16px;opacity:.3">📊</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Select a date range to generate report</div>
+        <div style="font-size:13px">Data pulls automatically from LSA, Google Ads & WhatConverts APIs</div>
+        <div style="margin-top:20px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="lsa-saved-weeks-btns"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<div id="lsa-acct-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;overflow-y:auto" onclick="if(event.target===this)lsaCloseModal()">
+  <div style="background:var(--surface);max-width:760px;margin:40px auto;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.2);border:1px solid var(--border);overflow:hidden">
+    <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)">
+      <div>
+        <div style="font-size:16px;font-weight:700" id="modal-acct-name"></div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px" id="modal-acct-period"></div>
+      </div>
+      <button onclick="lsaCloseModal()" style="background:none;border:1px solid var(--border2);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:12px;color:var(--muted);font-family:var(--font)">Close</button>
+    </div>
+    <div style="padding:20px 24px" id="modal-acct-body"></div>
+  </div>
+</div>
+
 </div><!-- /#main -->
 
 <script>
@@ -557,10 +644,7 @@ function showView(name) {
   if (view) view.classList.add('active');
   const nav = document.getElementById('nav-'+name);
   if (nav) nav.classList.add('active');
-  if (name==='lsa-dashboard') lsaRenderDashboard();
-  if (name==='lsa-accounts') lsaRenderAccounts();
-  if (name==='lsa-entry') lsaBuildManualForm();
-  if (name==='lsa-mcc') mccRenderList();
+  if (name==='lsa-weekly') { lsaWeeklyInit(); lsaShowSavedWeeks(); }
 }
 
 // ══ CLICKUP ══
@@ -1000,4 +1084,175 @@ function mccRenderList(){
 function mccToggle(name){if(mccSelected.has(name))mccSelected.delete(name);else mccSelected.add(name);mccRenderList();mccUpdateStatus();}
 function mccSelectAll(v){mccAccounts.forEach(a=>v?mccSelected.add(a.name):mccSelected.delete(a.name));mccRenderList();mccUpdateStatus();}
 function mccSaveSelection(){mccSaveState();const c=mccSelected.size;lsaAlert(`${c} account${c!==1?'s':''} selected for tracking.`,'success');showView('lsa-dashboard');}
+
+// ══════════════════════════════════════════════════
+// LSA WEEKLY — auto-fetch from Railway API
+// ══════════════════════════════════════════════════
+const LSA_API='https://google-ads-onboarding-production.up.railway.app/api/lsa/report';
+const LSA_AUTH_KEY='pwmp_lsa_auth';
+const LSA_HISTORY_KEY='pwmp_lsa_history_v2';
+let lsaCurrentData=null,lsaCurrentPeriod='';
+
+function lsaWeeklyInit(){
+  const today=new Date(),day=today.getDay();
+  const lastMon=new Date(today);lastMon.setDate(today.getDate()-((day+6)%7)-7);
+  const lastSun=new Date(lastMon);lastSun.setDate(lastMon.getDate()+6);
+  const sd=document.getElementById('lsa-start-date'),ed=document.getElementById('lsa-end-date');
+  if(sd&&!sd.value)sd.value=lastMon.toISOString().slice(0,10);
+  if(ed&&!ed.value)ed.value=lastSun.toISOString().slice(0,10);
+  lsaShowSavedWeeks();
+}
+
+async function lsaGenerate(){
+  const start=document.getElementById('lsa-start-date').value,end=document.getElementById('lsa-end-date').value;
+  if(!start||!end){alert('Select start and end dates.');return;}
+  const btn=document.getElementById('lsa-gen-btn');btn.disabled=true;btn.textContent='Loading…';
+  ['lsa-weekly-table-wrap','lsa-weekly-stats','lsa-filter-bar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const expBtn=document.getElementById('lsa-export-btn');if(expBtn)expBtn.style.display='none';
+  const emptyEl=document.getElementById('lsa-weekly-empty');
+  if(emptyEl){emptyEl.style.display='block';emptyEl.innerHTML='<div style="text-align:center;padding:80px 20px;color:var(--muted)"><div class="spinner" style="margin:0 auto 16px"></div><div style="font-size:13px;font-family:var(--mono)">Pulling data from LSA, Google Ads & WhatConverts…</div></div>';}
+  try{
+    const token=localStorage.getItem(LSA_AUTH_KEY)||'';
+    const resp=await fetch(LSA_API,{method:'POST',headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},body:JSON.stringify({start_date:start,end_date:end,assigned_to:null})});
+    if(resp.status===401){lsaShowAuthPrompt(start,end);return;}
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();if(!data.success)throw new Error('API error');
+    lsaCurrentData=data;lsaCurrentPeriod=start+' to '+end;
+    lsaSaveSnapshot(data,start,end);lsaRenderReport(data,start,end);
+  }catch(err){
+    if(emptyEl)emptyEl.innerHTML='<div style="text-align:center;padding:60px 20px"><div style="color:var(--red);font-size:13px;margin-bottom:8px">Failed: '+err.message+'</div><div style="color:var(--muted);font-size:12px">Saved reports:</div><div style="margin-top:12px" id="lsa-saved-weeks-btns"></div></div>';
+    lsaShowSavedWeeks('lsa-saved-weeks-btns');
+  }finally{
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px"><path d="M3 8a5 5 0 009.9-1M13 8a5 5 0 01-9.9 1"/><path d="M11 5l2 2-2 2M5 9l-2 2 2 2"/></svg> Generate Report';
+  }
+}
+
+function lsaShowAuthPrompt(start,end){
+  const el=document.getElementById('lsa-weekly-empty');
+  el.innerHTML='<div style="max-width:480px;margin:40px auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow)"><div style="font-size:14px;font-weight:700;margin-bottom:6px">Authentication required</div><div style="font-size:12px;color:var(--muted);margin-bottom:16px">The LSA API requires a Bearer token. Copy it from the Authorization header in Network tab when using the existing LSA app.</div><div style="margin-bottom:12px"><label style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px">Bearer Token</label><input type="password" id="lsa-token-input" placeholder="eyJhbGc…" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:8px 12px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none"></div><button class="btn primary" onclick="lsaSaveToken(\''+start+'\',\''+end+'\')">Save token & retry</button></div>';
+}
+function lsaSaveToken(s,e){const t=document.getElementById('lsa-token-input').value.trim();if(!t)return;localStorage.setItem(LSA_AUTH_KEY,t);lsaGenerate();}
+
+function lsaRenderReport(data,start,end){
+  const accounts=data.accounts||[];
+  const fmt=d=>{const p=d.split('-');return p[1]+'/'+p[2]+'/'+p[0].slice(2);};
+  const subEl=document.getElementById('lsa-report-sub');
+  if(subEl)subEl.textContent=fmt(start)+' – '+fmt(end)+' · '+accounts.length+' accounts';
+  const apiBar=document.getElementById('lsa-api-bar');
+  if(apiBar&&data.api_statuses){apiBar.style.display='flex';apiBar.innerHTML='<span style="color:var(--muted);margin-right:4px">APIs:</span>'+data.api_statuses.map(a=>'<span class="lsa-api-pill '+(a.status==='ok'?'lsa-api-ok':a.status==='error'?'lsa-api-err':'lsa-api-warn')+'">'+(a.status==='ok'?'✓':'✗')+' '+a.name+'</span>').join('');}
+  const totalCharged=accounts.reduce((s,a)=>s+(a.charged_leads||0),0);
+  const totalWC=accounts.reduce((s,a)=>s+(a.wc_total_leads||0),0);
+  const insIssues=accounts.filter(a=>a.insurance_expiry_warning).length;
+  const zeroLeads=accounts.filter(a=>(a.charged_leads||0)===0).length;
+  const sc=document.getElementById('lsa-stat-cards');
+  if(sc)sc.innerHTML='<div class="stat-card accent-blue"><div class="stat-label">Total accounts</div><div class="stat-value">'+accounts.length+'</div><div class="stat-sub">in report</div></div><div class="stat-card accent-green"><div class="stat-label">Total charged leads</div><div class="stat-value">'+totalCharged+'</div><div class="stat-sub">across all accounts</div></div><div class="stat-card accent-teal"><div class="stat-label">WhatConverts total</div><div class="stat-value">'+totalWC+'</div><div class="stat-sub">across all accounts</div></div><div class="stat-card accent-red"><div class="stat-label">Insurance issues</div><div class="stat-value">'+insIssues+'</div><div class="stat-sub">'+zeroLeads+' accounts with zero leads</div></div>';
+  ['lsa-weekly-stats','lsa-filter-bar','lsa-weekly-table-wrap'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='block';});
+  const emptyEl=document.getElementById('lsa-weekly-empty');if(emptyEl)emptyEl.style.display='none';
+  const expBtn=document.getElementById('lsa-export-btn');if(expBtn)expBtn.style.display='flex';
+  const ttl=document.getElementById('lsa-table-title');if(ttl)ttl.textContent=fmt(start)+' – '+fmt(end);
+  lsaFilterRender();
+}
+
+function lsaFilterRender(){
+  if(!lsaCurrentData)return;
+  const q=(document.getElementById('lsa-search')?.value||'').toLowerCase();
+  const status=document.getElementById('lsa-filter-status')?.value||'';
+  const insF=document.getElementById('lsa-filter-insurance')?.value||'';
+  const hideZero=document.getElementById('lsa-filter-zero')?.checked||false;
+  const seen=new Set();
+  let accounts=(lsaCurrentData.accounts||[]).filter(a=>{if(seen.has(a.lsa_customer_id))return false;seen.add(a.lsa_customer_id);return true;});
+  accounts=accounts.filter(a=>{
+    if(q&&!a.display_name.toLowerCase().includes(q))return false;
+    if(hideZero&&(a.charged_leads||0)===0)return false;
+    if(insF&&a.insurance_status!==insF)return false;
+    const attn=a.insurance_expiry_warning||(a.charged_leads||0)===0||a.compliance_issue_count>0;
+    if(status==='ok'&&attn)return false;
+    if(status==='attention'&&!attn)return false;
+    return true;
+  });
+  const tcEl=document.getElementById('lsa-table-count');if(tcEl)tcEl.textContent=accounts.length+' accounts';
+  const insLabel=a=>{const s=(a.insurance_status||'').toLowerCase();if(s==='current')return'<span class="lsa-ins-current">Current</span>';if(s==='expiring')return'<span class="lsa-ins-expiring">⚠ Expiring</span>';if(s==='expired')return'<span class="lsa-ins-expired">✗ Expired</span>';return'<span class="lsa-ins-unknown">'+(a.insurance_status||'—')+'</span>';};
+  const chip=(v,t)=>'<span class="chip '+(t==='green'?'chip-green':t==='amber'?'chip-amber':'chip-gray')+'">'+v+'</span>';
+  const notes=lsaGetNotes();
+  const rows=accounts.map(a=>{
+    const nk=a.lsa_customer_id+'__'+lsaCurrentPeriod;
+    const note=notes[nk]||'';
+    const flag=a.insurance_expiry_warning||a.compliance_issue_count>0;
+    const cats=Object.entries(a.lead_categories||{}).map(([k,v])=>lsaFmtCat(k)+': '+v).join(', ');
+    const safeId=a.lsa_customer_id.replace(/'/g,"\\'");
+    return '<tr onclick="lsaOpenModal(\''+safeId+'\')"><td><div style="font-size:13px;font-weight:600;color:var(--accent)">'+a.display_name+'</div>'+(cats?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+cats+'</div>':'')+'</td><td class="mono" style="color:'+((a.charged_leads||0)>0?'var(--green)':'var(--muted)')+'">'+( a.charged_leads??0)+'</td><td class="mono" style="color:'+((a.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')+'">'+( a.not_charged_leads??0)+'</td><td class="mono" style="color:'+((a.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')+'">'+( a.wc_unique_leads??0)+'</td><td class="mono" style="color:var(--muted)">'+( a.wc_repeat_leads??0)+'</td><td class="mono" style="color:'+((a.wc_total_leads||0)>0?'var(--green)':'var(--muted)')+'">'+( a.wc_total_leads??0)+'</td><td>'+insLabel(a)+(a.insurance_details?'<div style="font-size:10px;color:var(--muted);font-family:var(--mono)">'+a.insurance_details+'</div>':'')+'</td><td>'+chip(a.billing_status||'—',a.billing_status==='complete'?'green':'amber')+'</td><td>'+chip(a.background_check_status||'—',a.background_check_status==='complete'?'green':'amber')+'</td><td>'+chip(a.gbp_link_status||'—',a.gbp_link_status==='complete'?'green':'amber')+'</td><td>'+(flag?chip('⚠ Review','amber'):chip('✓ OK','green'))+'</td><td onclick="event.stopPropagation()" style="min-width:160px"><textarea class="note-field" rows="2" placeholder="Add optimization notes…" onchange="lsaSaveNote(\''+safeId+'\',\''+lsaCurrentPeriod.replace(/'/g,"\\'")+'\',this.value)">'+note+'</textarea></td></tr>';
+  }).join('');
+  const tbody=document.getElementById('lsa-weekly-table-body');
+  if(tbody)tbody.innerHTML='<div style="overflow-x:auto"><table class="lsa-row-tbl"><thead><tr><th style="min-width:200px">Account</th><th>Charged</th><th>Not Chgd</th><th>WC Uniq</th><th>WC Repeat</th><th>WC Total</th><th style="min-width:160px">Insurance</th><th>Billing</th><th>BG Check</th><th>GBP</th><th>Status</th><th style="min-width:180px">Optimization Notes</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+function lsaFmtCat(k){return k.replace('xcat:service_area_business_','').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+
+function lsaOpenModal(id){
+  if(!lsaCurrentData)return;
+  const seen=new Set();
+  const acct=(lsaCurrentData.accounts||[]).find(a=>{if(seen.has(a.lsa_customer_id))return false;seen.add(a.lsa_customer_id);return a.lsa_customer_id===id;});
+  if(!acct)return;
+  document.getElementById('modal-acct-name').textContent=acct.display_name;
+  document.getElementById('modal-acct-period').textContent=lsaCurrentPeriod;
+  const m=(key,val,color)=>'<div class="modal-metric"><div class="modal-metric-key">'+key+'</div><div class="modal-metric-val" style="color:'+(color||'var(--text)')+';">'+(val??'—')+'</div></div>';
+  const ic=s=>({current:'var(--green)',expiring:'var(--yellow)',expired:'var(--red)'}[(s||'').toLowerCase()]||'var(--muted)');
+  const cats=Object.entries(acct.lead_categories||{});
+  const notes=lsaGetNotes();const nk=acct.lsa_customer_id+'__'+lsaCurrentPeriod;
+  const safeId=acct.lsa_customer_id.replace(/'/g,"\\'");
+  const safePeriod=lsaCurrentPeriod.replace(/'/g,"\\'");
+  document.getElementById('modal-acct-body').innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'+m('Charged Leads',acct.charged_leads,(acct.charged_leads||0)>0?'var(--green)':'var(--muted)')+m('Not Charged',acct.not_charged_leads,(acct.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')+m('WC Unique',acct.wc_unique_leads,(acct.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')+m('WC Repeat',acct.wc_repeat_leads)+m('WC Total',acct.wc_total_leads,(acct.wc_total_leads||0)>0?'var(--green)':'var(--muted)')+m('LSA Customer ID',acct.lsa_customer_id)+'</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px"><div class="modal-metric"><div class="modal-metric-key">Insurance</div><div class="modal-metric-val" style="font-size:13px;color:'+ic(acct.insurance_status)+'">'+( acct.insurance_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.insurance_details||'')+'</div></div><div class="modal-metric"><div class="modal-metric-key">Billing</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.billing_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.billing_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.billing_details||'')+'</div></div><div class="modal-metric"><div class="modal-metric-key">Background Check</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.background_check_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.background_check_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.background_check_details||'')+'</div></div><div class="modal-metric"><div class="modal-metric-key">Google Business Profile</div><div class="modal-metric-val" style="font-size:13px;color:'+(acct.gbp_link_status==='complete'?'var(--green)':'var(--yellow)')+'">'+( acct.gbp_link_status||'—')+'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(acct.gbp_link_details||'')+'</div></div></div>'+(cats.length?'<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Lead Categories</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+cats.map(([k,v])=>'<span class="chip chip-blue">'+lsaFmtCat(k)+': '+v+'</span>').join('')+'</div></div>':'')+(acct.wc_warnings?.length?'<div style="margin-bottom:16px;padding:10px 12px;background:#fefce8;border-radius:8px;border-left:3px solid var(--yellow)">'+acct.wc_warnings.map(w=>'<div style="font-size:11px;color:#92400e">⚠ '+w+'</div>').join('')+'</div>':'')+(acct.compliance_issues?.length?'<div style="margin-bottom:16px;padding:10px 12px;background:#fee2e2;border-radius:8px;border-left:3px solid var(--red)">'+acct.compliance_issues.map(c=>'<div style="font-size:11px;color:var(--red)">✗ '+c.details+'</div>').join('')+'</div>':'')+'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Optimization Notes</div><textarea class="note-field" rows="4" style="width:100%" placeholder="What was done this week? What needs follow-up?" onchange="lsaSaveNote(\''+safeId+'\',\''+safePeriod+'\',this.value)">'+(notes[nk]||'')+'</textarea><div style="font-size:11px;color:var(--muted);margin-top:4px">Notes auto-saved locally.</div></div>';
+  document.getElementById('lsa-acct-modal').style.display='block';
+  document.body.style.overflow='hidden';
+}
+function lsaCloseModal(){document.getElementById('lsa-acct-modal').style.display='none';document.body.style.overflow='';lsaFilterRender();}
+function lsaGetNotes(){try{return JSON.parse(localStorage.getItem('pwmp_lsa_notes')||'{}');}catch{return{};}}
+function lsaSaveNote(id,period,val){const n=lsaGetNotes();n[id+'__'+period]=val;localStorage.setItem('pwmp_lsa_notes',JSON.stringify(n));}
+
+function lsaSaveSnapshot(data,start,end){
+  try{
+    const h=JSON.parse(localStorage.getItem(LSA_HISTORY_KEY)||'{}');
+    const k=start+'__'+end;
+    h[k]={start,end,savedAt:Date.now(),accountCount:(data.accounts||[]).length,data};
+    const keys=Object.keys(h).sort();
+    if(keys.length>12)delete h[keys[0]];
+    localStorage.setItem(LSA_HISTORY_KEY,JSON.stringify(h));
+    lsaShowSavedWeeks();
+    const badge=document.getElementById('nav-lsa-badge');if(badge)badge.textContent=Object.keys(h).length;
+  }catch(e){console.warn('Snapshot failed',e);}
+}
+function lsaShowSavedWeeks(cid){
+  const id=cid||'lsa-saved-weeks-btns';const el=document.getElementById(id);if(!el)return;
+  try{
+    const h=JSON.parse(localStorage.getItem(LSA_HISTORY_KEY)||'{}');
+    const keys=Object.keys(h).sort().reverse();
+    if(!keys.length){el.innerHTML='';return;}
+    el.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Previously saved:</div>'+keys.map(k=>{const s=h[k];return'<button class="lsa-week-btn" onclick="lsaLoadSnapshot(\''+k+'\')">'+s.start+' → '+s.end+' <span style="opacity:.5">('+s.accountCount+' accts)</span></button>';}).join('');
+    const badge=document.getElementById('nav-lsa-badge');if(badge)badge.textContent=keys.length;
+  }catch(e){}
+}
+function lsaLoadSnapshot(key){
+  try{
+    const h=JSON.parse(localStorage.getItem(LSA_HISTORY_KEY)||'{}');
+    const snap=h[key];if(!snap)return;
+    lsaCurrentData=snap.data;lsaCurrentPeriod=snap.start+' to '+snap.end;
+    const sd=document.getElementById('lsa-start-date'),ed=document.getElementById('lsa-end-date');
+    if(sd)sd.value=snap.start;if(ed)ed.value=snap.end;
+    lsaRenderReport(snap.data,snap.start,snap.end);
+  }catch(e){alert('Load failed: '+e.message);}
+}
+function lsaExportWeekly(){
+  if(!lsaCurrentData)return;
+  const h=['Account','LSA ID','Charged','Not Charged','WC Unique','WC Repeat','WC Total','Insurance Status','Insurance Details','Billing','BG Check','GBP','Compliance Issues','Lead Categories','WC Warnings','Notes'];
+  const notes=lsaGetNotes();const seen=new Set();
+  const rows=(lsaCurrentData.accounts||[]).filter(a=>{if(seen.has(a.lsa_customer_id))return false;seen.add(a.lsa_customer_id);return true;}).map(a=>{
+    const nk=a.lsa_customer_id+'__'+lsaCurrentPeriod;
+    const cats=Object.entries(a.lead_categories||{}).map(([k,v])=>lsaFmtCat(k)+': '+v).join('; ');
+    return['"'+a.display_name+'"',a.lsa_customer_id,a.charged_leads??0,a.not_charged_leads??0,a.wc_unique_leads??0,a.wc_repeat_leads??0,a.wc_total_leads??0,'"'+(a.insurance_status||'')+'"','"'+(a.insurance_details||'')+'"','"'+(a.billing_status||'')+'"','"'+(a.background_check_status||'')+'"','"'+(a.gbp_link_status||'')+'"',a.compliance_issue_count||0,'"'+cats+'"','"'+((a.wc_warnings||[]).join('; '))+'"','"'+((notes[nk]||'').replace(/"/g,'""'))+'"'].join(',');
+  });
+  const csv=[h.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='lsa-weekly-'+lsaCurrentPeriod.replace(/ /g,'-')+'.csv';a.click();URL.revokeObjectURL(url);
+}
+
 </script>
