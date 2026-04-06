@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSA Operations · PWMP Ops Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f9;--surface:#fff;--surface2:#f0f2f6;--border:#e2e6ed;--border2:#cdd3df;--text:#1a2035;--muted:#6b7a99;--accent:#c0392b;--accent2:#a93226;--blue:#1a56b0;--green:#16a34a;--yellow:#d97706;--red:#dc2626;--teal:#0d9488;--purple:#7c3aed;--font:'Inter',sans-serif;--mono:'DM Mono',monospace;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+
+.header{background:linear-gradient(135deg,#1a1a2e,#16213e 50%,#0f3460);padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#c0392b,#e74c3c);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff}
+.header h1{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.02em}
+.header .sub{font-size:11px;color:#94a3b8}
+.back-link{color:#94a3b8;font-size:12px;text-decoration:none;display:flex;align-items:center;gap:4px;transition:color .15s}
+.back-link:hover{color:#fff}
+.api-pills{display:flex;gap:6px}
+.api-pill{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;font-family:var(--mono);display:flex;align-items:center;gap:4px}
+.api-pill.ok{background:rgba(22,163,74,.12);color:#4ade80}
+.api-pill.err{background:rgba(220,38,38,.12);color:#f87171}
+.api-pill .d{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+.container{padding:20px 28px}
+.controls{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.controls-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.cg label{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.cg input,.cg select{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none}
+.cg input:focus,.cg select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,86,176,.1)}
+.presets{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.presets span{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:3px}
+.pbtn{padding:3px 9px;border:1px solid var(--border2);border-radius:4px;font-size:10px;font-weight:500;color:var(--muted);background:var(--surface);cursor:pointer;font-family:var(--font);transition:all .15s}
+.pbtn:hover{background:var(--surface2);color:var(--text);border-color:var(--blue)}
+
+.btn{padding:6px 13px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .15s;border:1px solid var(--border2);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:5px;box-shadow:var(--shadow)}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(192,57,43,.25)}
+.btn.primary:hover{background:var(--accent2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:var(--shadow)}
+.sc-l{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.sc-v{font-size:24px;font-weight:700;font-family:var(--mono);line-height:1}
+.sc-s{font-size:10px;color:var(--muted);margin-top:3px}
+.sc.ab{border-top:3px solid var(--blue)}.sc.ab .sc-v{color:var(--blue)}
+.sc.ag{border-top:3px solid var(--green)}.sc.ag .sc-v{color:var(--green)}
+.sc.at{border-top:3px solid var(--teal)}.sc.at .sc-v{color:var(--teal)}
+.sc.ap{border-top:3px solid var(--purple)}.sc.ap .sc-v{color:var(--purple)}
+.sc.ay{border-top:3px solid var(--yellow)}.sc.ay .sc-v{color:var(--yellow)}
+.sc.ar{border-top:3px solid var(--red)}.sc.ar .sc-v{color:var(--red)}
+
+.fb{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+.sw{flex:1;min-width:180px;max-width:280px;position:relative}
+.sw svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--muted)}
+.si{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:6px 10px 6px 30px;font-size:12px;font-family:var(--font);color:var(--text);outline:none;box-shadow:var(--shadow)}
+.si:focus{border-color:var(--blue)}
+.fs{background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:6px 24px 6px 8px;font-size:11px;font-family:var(--font);color:var(--text);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a99'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;box-shadow:var(--shadow)}
+.fc{font-size:11px;font-family:var(--mono);color:var(--muted);margin-left:auto}
+
+.tw{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.th-bar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.th-bar .t{font-size:13px;font-weight:600}
+.ts{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{padding:7px 8px;text-align:left;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
+th:hover{color:var(--text)}
+th .sa{margin-left:2px;opacity:.4;font-size:8px}
+th.sorted .sa{opacity:1;color:var(--blue)}
+td{padding:8px 8px;font-size:11.5px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr{transition:background .1s;cursor:pointer}
+tbody tr:hover{background:#f8f9ff}
+tbody tr:last-child td{border-bottom:none}
+.mono{font-family:var(--mono)}
+
+.chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;font-family:var(--mono)}
+.cg_{background:var(--surface2);color:var(--muted);border:1px solid var(--border2)}
+.cgr{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.ca{background:#fef9c3;color:#a16207;border:1px solid #fde68a}
+.cr{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+.cb{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;overflow-y:auto}
+.modal-bg.open{display:block}
+.modal{background:var(--surface);max-width:800px;margin:36px auto;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.2);border:1px solid var(--border);overflow:hidden}
+.mh{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)}
+.mh h2{font-size:15px;font-weight:700}.mh .per{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.mb{padding:18px 20px}
+.mg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.mg2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+.mm{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px}
+.mm-k{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+.mm-v{font-size:14px;font-weight:600;font-family:var(--mono)}
+
+.nf{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:var(--mono);font-size:10px;padding:5px 7px;resize:vertical;outline:none}
+.nf:focus{border-color:var(--blue)}
+
+.tgl{width:28px;height:16px;border-radius:8px;position:relative;cursor:pointer;transition:background .2s;display:inline-block;vertical-align:middle}
+.tgl.on{background:#22c55e}.tgl.off{background:#d1d5db}
+.tgl-d{position:absolute;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.tgl.on .tgl-d{left:14px}.tgl.off .tgl-d{left:2px}
+
+.edt{cursor:pointer;border-bottom:1px dashed var(--border2);padding:0 2px}.edt:hover{background:rgba(26,86,176,.06)}
+
+.tabs{display:flex;gap:3px;background:var(--surface2);padding:3px;border-radius:7px;margin-bottom:14px;width:fit-content;border:1px solid var(--border)}
+.tab{padding:5px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:600;color:var(--muted);border:none;background:none;font-family:var(--font);transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow);border:1px solid var(--border)}
+
+.alert{padding:9px 14px;border-radius:7px;font-size:12px;margin-bottom:12px;display:none}
+.alert.show{display:block}
+.alert.warn{background:#fefce8;border:1px solid #fde68a;color:#92400e}
+
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.spinner{width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.acct-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.acct-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:all .15s;background:var(--surface2)}
+.acct-item:hover{border-color:var(--blue);background:#eff6ff}
+.acct-item.sel{border-color:var(--accent);background:rgba(192,57,43,.04)}
+.acct-item input{accent-color:var(--accent);width:13px;height:13px;cursor:pointer}
+
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.controls-row{flex-direction:column;align-items:stretch}.sw{max-width:100%}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <a href="/" class="back-link">← Hub</a>
+    <div class="header-icon">L</div>
+    <div><h1>LSA Operations</h1><div class="sub">Local Services Ads · Monitoring & Reporting</div></div>
+  </div>
+  <div class="api-pills" id="api-pills"></div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="swTab('report',this)">Report</button>
+    <button class="tab" onclick="swTab('settings',this)">Account Settings</button>
+    <button class="tab" onclick="swTab('alerts',this)">Alerts <span id="abadge" style="background:var(--red);color:#fff;border-radius:10px;padding:1px 5px;font-size:9px;margin-left:3px"></span></button>
+  </div>
+
+  <div id="tab-report">
+    <div class="controls">
+      <div class="controls-row">
+        <div class="cg"><label>Start Date</label><input type="date" id="sd"></div>
+        <div class="cg"><label>End Date</label><input type="date" id="ed"></div>
+        <div class="cg"><label>Assigned To</label><select id="at"><option value="all">All Team Members</option></select></div>
+        <button class="btn primary" onclick="gen()" id="gbtn">Generate Report</button>
+        <button class="btn" onclick="doExport()" id="ebtn" style="display:none">Export CSV</button>
+      </div>
+      <div class="presets">
+        <span>Quick:</span>
+        <button class="pbtn" onclick="pre('thisWeek')">This Week</button>
+        <button class="pbtn" onclick="pre('lastWeek')">Last Week</button>
+        <button class="pbtn" onclick="pre('last7')">Last 7 Days</button>
+        <button class="pbtn" onclick="pre('last14')">Last 14 Days</button>
+        <button class="pbtn" onclick="pre('last30')">Last 30 Days</button>
+        <button class="pbtn" onclick="pre('thisMonth')">This Month</button>
+        <button class="pbtn" onclick="pre('lastMonth')">Last Month</button>
+      </div>
+    </div>
+    <div class="stats-row" id="sr" style="display:none"></div>
+    <div class="alert" id="ra"></div>
+    <div class="fb" id="fb" style="display:none">
+      <div class="sw"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg><input type="text" class="si" placeholder="Search accounts…" id="sq" oninput="ren()"></div>
+      <select class="fs" id="fst" onchange="ren()"><option value="">All statuses</option><option value="ok">OK</option><option value="issues">Has issues</option></select>
+      <select class="fs" id="fins" onchange="ren()"><option value="">All insurance</option><option value="current">Current</option><option value="expiring">Expiring</option><option value="expired">Expired</option></select>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);cursor:pointer;padding:5px 8px;background:var(--surface);border:1px solid var(--border2);border-radius:6px"><input type="checkbox" id="hz" onchange="ren()" style="accent-color:var(--accent)">Hide zero leads</label>
+      <div class="fc" id="fc"></div>
+    </div>
+    <div id="ta"><div class="empty" id="es"><div style="font-size:36px;margin-bottom:12px;opacity:.3">📊</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Select a date range to generate report</div><div style="font-size:12px">Data pulls from LSA, Google Ads & WhatConverts APIs</div></div></div>
+  </div>
+
+  <div id="tab-settings" style="display:none">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--shadow)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:3px">Account Management</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Auto-pulled from your MCC. Check accounts to include in reports.</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn" onclick="mccPull()" id="mcc-btn">Pull from MCC</button>
+        <button class="btn" onclick="selAll(true)">Select All</button>
+        <button class="btn" onclick="selAll(false)">Deselect All</button>
+        <span id="mcc-status" style="font-size:11px;color:var(--muted);align-self:center"></span>
+      </div>
+      <div class="acct-grid" id="ag"></div>
+      <div style="margin-top:16px;padding:12px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;margin-bottom:4px">Manual Data Fields</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.5"><strong>Photos</strong> and <strong>Message Lead</strong> need manual updates (not available via API). Edit them directly in the report table — click the photo number or toggle the message lead switch. Changes persist across sessions.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-alerts" style="display:none">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;box-shadow:var(--shadow)">
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px">Active Alerts & Issues</div>
+      <div id="al"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal" onclick="if(event.target===this)clModal()">
+  <div class="modal"><div class="mh"><div><h2 id="mn"></h2><div class="per" id="mp"></div></div><button class="btn" onclick="clModal()">Close</button></div><div class="mb" id="mbd"></div></div>
+</div>
+
+<script>
+const MAN_KEY='pwmp_lsa_manual',NOTE_KEY='pwmp_lsa_notes2',SEL_KEY='pwmp_lsa_sel2',HIST_KEY='pwmp_lsa_hist3',MCC_KEY='pwmp_mcc2';
+let cData=null,cPeriod='',sf=null,sd='asc',mccAccts=[];
+let selected=new Set();
+
+// ═══ INIT ═══
+window.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date(),day=now.getDay();
+  const lm=new Date(now);lm.setDate(now.getDate()-((day+6)%7)-7);
+  const ls=new Date(lm);ls.setDate(lm.getDate()+6);
+  $('sd').value=lm.toISOString().slice(0,10);
+  $('ed').value=ls.toISOString().slice(0,10);
+  try{selected=new Set(JSON.parse(localStorage.getItem(SEL_KEY)||'[]'));}catch{}
+  try{mccAccts=JSON.parse(localStorage.getItem(MCC_KEY)||'[]');}catch{}
+  // Load last report
+  try{const h=JSON.parse(localStorage.getItem(HIST_KEY)||'null');if(h){cData=h.data;cPeriod=h.period;$('sd').value=h.start;$('ed').value=h.end;showReport();}}catch{}
+  updPills([]);
+});
+
+function $(id){return document.getElementById(id);}
+
+// ═══ TABS ═══
+function swTab(id,btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');['report','settings','alerts'].forEach(t=>{$('tab-'+t).style.display=t===id?'block':'none';});if(id==='settings')renSettings();if(id==='alerts')renAlerts();}
+
+// ═══ DATE PRESETS ═══
+function pre(p){const now=new Date();let s,e=new Date(now);switch(p){case'thisWeek':s=new Date(now);s.setDate(now.getDate()-now.getDay()+1);break;case'lastWeek':s=new Date(now);s.setDate(now.getDate()-now.getDay()-6);e=new Date(s);e.setDate(s.getDate()+6);break;case'last7':s=new Date(now);s.setDate(now.getDate()-7);break;case'last14':s=new Date(now);s.setDate(now.getDate()-14);break;case'last30':s=new Date(now);s.setDate(now.getDate()-30);break;case'thisMonth':s=new Date(now.getFullYear(),now.getMonth(),1);break;case'lastMonth':s=new Date(now.getFullYear(),now.getMonth()-1,1);e=new Date(now.getFullYear(),now.getMonth(),0);break;default:return;}$('sd').value=s.toISOString().slice(0,10);$('ed').value=e.toISOString().slice(0,10);}
+
+// ═══ GENERATE ═══
+async function gen(){
+  const start=$('sd').value,end=$('ed').value;
+  if(!start||!end){alert('Select dates');return;}
+  const btn=$('gbtn');btn.disabled=true;btn.textContent='Loading…';
+  $('sr').style.display='none';$('fb').style.display='none';$('ebtn').style.display='none';
+  $('ta').innerHTML='<div class="empty"><div class="spinner"></div><div style="font-size:13px;font-family:var(--mono)">Pulling data from LSA, Google Ads & WhatConverts…</div></div>';
+
+  try{
+    const resp=await fetch('/api/lsa-report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start_date:start,end_date:end})});
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();
+    if(!data.success)throw new Error(data.error||'API error');
+    
+    // Apply manual fields
+    applyMan(data.accounts||[]);
+    
+    // Filter by selected if any
+    if(selected.size>0){data.accounts=(data.accounts||[]).filter(a=>selected.has(a.lsa_customer_id)||selected.has(a.display_name));}
+    
+    cData=data;cPeriod=start+' to '+end;
+    localStorage.setItem(HIST_KEY,JSON.stringify({data,period:cPeriod,start,end}));
+    updPills(data.api_statuses||[]);
+    showReport();
+  }catch(err){
+    $('ta').innerHTML=`<div class="empty"><div style="color:var(--red);font-size:13px;margin-bottom:8px">Failed: ${err.message}</div><div style="font-size:12px;color:var(--muted)">Check that API environment variables are set in Vercel dashboard.<br>The API endpoint /api/lsa-report must be available.</div></div>`;
+  }finally{
+    btn.disabled=false;btn.textContent='Generate Report';
+  }
+}
+
+function updPills(statuses){
+  const el=$('api-pills');
+  if(!statuses||!statuses.length){el.innerHTML=['Google Ads API','LSA API','WhatConverts API'].map(n=>`<div class="api-pill ok"><div class="d"></div>${n}</div>`).join('');return;}
+  el.innerHTML=statuses.map(s=>`<div class="api-pill ${s.status==='ok'?'ok':'err'}"><div class="d"></div>${s.name}</div>`).join('');
+}
+
+function showReport(){
+  if(!cData)return;
+  const accts=cData.accounts||[];
+  const tc=accts.reduce((s,a)=>s+(a.charged_leads||0),0);
+  const tnc=accts.reduce((s,a)=>s+(a.not_charged_leads||0),0);
+  const twc=accts.reduce((s,a)=>s+(a.wc_total_leads||0),0);
+  const tls=accts.reduce((s,a)=>s+(a.lead_spent||0),0);
+  const ti=accts.reduce((s,a)=>s+(a.ad_impressions||0),0);
+  const tb=accts.reduce((s,a)=>s+(a.weekly_budget||0),0);
+  const ic=accts.filter(a=>(a.compliance_issue_count||0)>0).length;
+  const ins=accts.filter(a=>a.insurance_expiry_warning).length;
+
+  const sr=$('sr');sr.style.display='grid';
+  sr.innerHTML=`<div class="sc ab"><div class="sc-l">Accounts</div><div class="sc-v">${accts.length}</div><div class="sc-s">in report</div></div>
+    <div class="sc ag"><div class="sc-l">Charged Leads</div><div class="sc-v">${tc}</div><div class="sc-s">${tnc} not charged</div></div>
+    <div class="sc at"><div class="sc-l">WC Total</div><div class="sc-v">${twc}</div><div class="sc-s">across accounts</div></div>
+    <div class="sc ap"><div class="sc-l">Lead Spend</div><div class="sc-v">$${tls.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="sc-s">${ti.toLocaleString()} impressions</div></div>
+    <div class="sc ay"><div class="sc-l">Budget</div><div class="sc-v">$${tb.toLocaleString(undefined,{maximumFractionDigits:0})}</div><div class="sc-s">${tb>0?Math.round(tls/tb*100)+'% utilized':'—'}</div></div>
+    <div class="sc ar"><div class="sc-l">Attention</div><div class="sc-v">${ic}</div><div class="sc-s">${ins} insurance</div></div>`;
+  
+  $('abadge').textContent=ic>0?ic:'';
+  const ra=$('ra');
+  if(ic>0){ra.className='alert warn show';ra.textContent=`⚠ ${ic} account${ic>1?'s':''} need attention.`;}else{ra.className='alert';}
+  $('fb').style.display='flex';$('ebtn').style.display='inline-flex';
+  ren();
+}
+
+// ═══ TABLE ═══
+function ren(){
+  if(!cData)return;
+  const q=($('sq')?.value||'').toLowerCase();
+  const fst=$('fst')?.value||'';
+  const fins=$('fins')?.value||'';
+  const hz=$('hz')?.checked||false;
+  let a=[...(cData.accounts||[])];
+  // Dedupe by customer ID
+  const seen=new Set();a=a.filter(x=>{if(seen.has(x.lsa_customer_id))return false;seen.add(x.lsa_customer_id);return true;});
+  if(q)a=a.filter(x=>x.display_name.toLowerCase().includes(q));
+  if(hz)a=a.filter(x=>(x.charged_leads||0)>0);
+  if(fins)a=a.filter(x=>x.insurance_status===fins);
+  if(fst==='ok')a=a.filter(x=>!x.compliance_issue_count);
+  if(fst==='issues')a=a.filter(x=>x.compliance_issue_count>0);
+  if(sf){a.sort((x,y)=>{let va=x[sf],vb=y[sf];if(Array.isArray(va))va=va.length;if(Array.isArray(vb))vb=vb.length;if(typeof va==='string')va=va.toLowerCase();if(typeof vb==='string')vb=vb.toLowerCase();if(va==null)va='';if(vb==null)vb='';if(va<vb)return sd==='asc'?-1:1;if(va>vb)return sd==='asc'?1:-1;return 0;});}
+  $('fc').textContent=a.length+' accounts';
+
+  const ch=(v,t)=>`<span class="chip ${t}">${v}</span>`;
+  const il=x=>{const s=(x.insurance_status||'').toLowerCase();if(s==='current')return ch('Current','cgr');if(s==='expiring')return ch('⚠ Expiring','ca');if(s==='expired')return ch('✗ Expired','cr');return ch(x.insurance_status||'—','cg_');};
+  const cs=(v,ok)=>ch(v||'—',v===ok?'cgr':'ca');
+  const notes=gNotes();
+
+  const hds=[{f:'display_name',l:'Account',w:'180px'},{f:'charged_leads',l:'Charged'},{f:'not_charged_leads',l:'Not Chgd'},{f:'wc_unique_leads',l:'WC Uniq'},{f:'wc_repeat_leads',l:'WC Rpt'},{f:'wc_total_leads',l:'WC Tot'},{f:'phone_responsiveness',l:'Resp%'},{f:'reviews_count',l:'Reviews'},{f:'weekly_budget',l:'Budget'},{f:'lead_spent',l:'Lead $'},{f:'ad_impressions',l:'Impr'},{f:'top_impression_rate',l:'Top%'},{f:'abs_top_impression_rate',l:'AbsT%'},{f:'billing_status',l:'Bill'},{f:'insurance_status',l:'Insurance',w:'120px'},{f:'background_check_status',l:'BG'},{f:'gbp_link_status',l:'GBP'},{f:'job_types',l:'Job Types'},{f:'photos',l:'Pho'},{f:'message_lead',l:'Msg'},{f:'compliance_issue_count',l:'Iss'},{l:'Notes',w:'150px'}];
+  const ths=hds.map(h=>{const s=sf===h.f;return`<th${h.w?' style="min-width:'+h.w+'"':''}${h.f?` onclick="doSort('${h.f}')"`:''}${s?' class="sorted"':''}>${h.l}${h.f?`<span class="sa">${s?(sd==='asc'?'▲':'▼'):'↕'}</span>`:''}</th>`;}).join('');
+
+  const rows=a.map(x=>{
+    const id=x.lsa_customer_id;const nk=id+'__'+cPeriod;const note=notes[nk]||'';
+    const cats=Object.entries(x.lead_categories||{}).map(([k,v])=>fCat(k)+':'+v).join(', ');
+    const cv=(v,c)=>`style="color:${v>0?c:'var(--muted)'}"`;
+    return`<tr onclick="opModal('${id}')">
+      <td><div style="font-size:12px;font-weight:600;color:var(--accent)">${x.display_name}</div>${cats?`<div style="font-size:9px;color:var(--muted);margin-top:1px">${cats}</div>`:''}</td>
+      <td class="mono" ${cv(x.charged_leads,'var(--green)')}>${x.charged_leads??0}</td>
+      <td class="mono" ${cv(x.not_charged_leads,'var(--yellow)')}>${x.not_charged_leads??0}</td>
+      <td class="mono" ${cv(x.wc_unique_leads,'var(--teal)')}>${x.wc_unique_leads??0}</td>
+      <td class="mono" style="color:var(--muted)">${x.wc_repeat_leads??0}</td>
+      <td class="mono" ${cv(x.wc_total_leads,'var(--green)')}>${x.wc_total_leads??0}</td>
+      <td class="mono" style="color:${(x.phone_responsiveness||100)<70?'var(--yellow)':'var(--text)'}">${x.phone_responsiveness!=null?x.phone_responsiveness+'%':'—'}</td>
+      <td class="mono">${x.reviews_count??'—'}${x.average_rating?`<span style="color:var(--yellow);font-size:9px">★${x.average_rating}</span>`:''}</td>
+      <td class="mono">${x.weekly_budget!=null?'$'+Number(x.weekly_budget).toLocaleString():'—'}</td>
+      <td class="mono" style="color:var(--purple)">${x.lead_spent!=null?'$'+Number(x.lead_spent).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>
+      <td class="mono">${x.ad_impressions!=null?Number(x.ad_impressions).toLocaleString():'—'}</td>
+      <td class="mono">${x.top_impression_rate!=null?x.top_impression_rate+'%':'—'}</td>
+      <td class="mono">${x.abs_top_impression_rate!=null?x.abs_top_impression_rate+'%':'—'}</td>
+      <td>${cs(x.billing_status,'complete')}</td>
+      <td>${il(x)}${x.insurance_details?`<div style="font-size:9px;color:var(--muted);font-family:var(--mono)">${x.insurance_details}</div>`:''}</td>
+      <td>${cs(x.background_check_status,'complete')}</td>
+      <td>${cs(x.gbp_link_status,'complete')}</td>
+      <td style="font-size:10px;max-width:120px">${x.job_types?.length?x.job_types.join(', ')+`<span style="color:var(--muted)"> (${x.job_types.length})</span>`:'—'}</td>
+      <td class="mono" onclick="event.stopPropagation()"><span class="edt" data-id="${id}" onclick="edPh(this)" style="color:${(x.photos!=null&&x.photos<5)?'var(--red)':'var(--text)'}">${x.photos??'—'}</span></td>
+      <td onclick="event.stopPropagation()"><div class="tgl ${x.message_lead?'on':'off'}" onclick="tgMsg('${id}',this)"><div class="tgl-d"></div></div></td>
+      <td>${(x.compliance_issue_count||0)>0?ch('⚠ '+x.compliance_issue_count,'ca'):ch('✓','cgr')}</td>
+      <td onclick="event.stopPropagation()"><textarea class="nf" rows="2" placeholder="Notes…" onchange="sNote('${id}','${cPeriod.replace(/'/g,"\\'")}',this.value)">${note}</textarea></td>
+    </tr>`;}).join('');
+
+  $('ta').innerHTML=`<div class="tw"><div class="th-bar"><span class="t">Report: ${cPeriod}</span><span class="mono" style="font-size:10px;color:var(--muted)">${a.length} accounts</span></div><div class="ts"><table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+
+function doSort(f){if(sf===f)sd=sd==='asc'?'desc':'asc';else{sf=f;sd='asc';}ren();}
+
+// ═══ INLINE EDIT ═══
+function edPh(el){const id=el.dataset.id,cur=el.textContent==='—'?'':el.textContent;const i=document.createElement('input');i.type='number';i.min='0';i.value=cur;i.style.cssText='width:40px;padding:2px;border:1px solid var(--blue);border-radius:3px;font-size:11px;font-family:var(--mono);text-align:center;outline:none';i.onblur=function(){const v=parseInt(this.value)||0;sMan(id,'photos',v);el.textContent=v;el.style.color=v<5?'var(--red)':'var(--text)';this.replaceWith(el);};i.onkeydown=function(e){if(e.key==='Enter')this.blur();};el.replaceWith(i);i.focus();i.select();}
+function tgMsg(id,el){const on=el.classList.contains('on');el.classList.toggle('on',!on);el.classList.toggle('off',on);sMan(id,'message_lead',!on);}
+function sMan(id,f,v){let d={};try{d=JSON.parse(localStorage.getItem(MAN_KEY)||'{}');}catch{}if(!d[id])d[id]={};d[id][f]=v;localStorage.setItem(MAN_KEY,JSON.stringify(d));if(cData?.accounts){const a=cData.accounts.find(x=>x.lsa_customer_id===id);if(a)a[f]=v;}}
+function applyMan(accts){let d={};try{d=JSON.parse(localStorage.getItem(MAN_KEY)||'{}');}catch{}for(const a of accts){const m=d[a.lsa_customer_id];if(m){if(m.photos!=null)a.photos=m.photos;if(m.message_lead!=null)a.message_lead=m.message_lead;}}}
+
+// ═══ NOTES ═══
+function gNotes(){try{return JSON.parse(localStorage.getItem(NOTE_KEY)||'{}');}catch{return{};}}
+function sNote(id,p,v){const n=gNotes();n[id+'__'+p]=v;localStorage.setItem(NOTE_KEY,JSON.stringify(n));}
+
+// ═══ MODAL ═══
+function opModal(id){
+  const a=(cData?.accounts||[]).find(x=>x.lsa_customer_id===id);if(!a)return;
+  $('mn').textContent=a.display_name;$('mp').textContent=cPeriod;
+  const m=(k,v,c)=>`<div class="mm"><div class="mm-k">${k}</div><div class="mm-v"${c?' style="color:'+c+'"':''}>${v??'—'}</div></div>`;
+  const ic=s=>({current:'var(--green)',expiring:'var(--yellow)',expired:'var(--red)'}[s]||'var(--muted)');
+  const notes=gNotes();const nk=a.lsa_customer_id+'__'+cPeriod;
+
+  let h=`<div class="mg">${m('Charged',a.charged_leads,(a.charged_leads||0)>0?'var(--green)':'var(--muted)')}${m('Not Charged',a.not_charged_leads,(a.not_charged_leads||0)>0?'var(--yellow)':'var(--muted)')}${m('WC Unique',a.wc_unique_leads,(a.wc_unique_leads||0)>0?'var(--teal)':'var(--muted)')}${m('WC Repeat',a.wc_repeat_leads)}${m('WC Total',a.wc_total_leads,(a.wc_total_leads||0)>0?'var(--green)':'var(--muted)')}${m('Responsiveness',a.phone_responsiveness!=null?a.phone_responsiveness+'%':'—',(a.phone_responsiveness||100)<70?'var(--yellow)':null)}${m('Reviews',(a.reviews_count??'—')+(a.average_rating?' ★'+a.average_rating:''))}${m('Budget',a.weekly_budget!=null?'$'+Number(a.weekly_budget).toLocaleString():'—')}${m('Lead Spent',a.lead_spent!=null?'$'+Number(a.lead_spent).toFixed(2):'—','var(--purple)')}${m('Impressions',a.ad_impressions!=null?Number(a.ad_impressions).toLocaleString():'—')}${m('Top Imp%',a.top_impression_rate!=null?a.top_impression_rate+'%':'—')}${m('AbsTop%',a.abs_top_impression_rate!=null?a.abs_top_impression_rate+'%':'—')}${m('Photos',a.photos??'—',(a.photos!=null&&a.photos<5)?'var(--red)':null)}${m('Msg Lead',a.message_lead?'Enabled':'Disabled',a.message_lead?'var(--green)':'var(--muted)')}${m('ID',a.lsa_customer_id)}</div>`;
+  h+=`<div class="mg2">${m('Insurance<br><span style="font-size:9px;color:var(--muted)">'+(a.insurance_details||'')+'</span>',a.insurance_status||'—',ic(a.insurance_status))}${m('Billing',a.billing_status||'—',a.billing_status==='complete'?'var(--green)':'var(--yellow)')}${m('BG Check',a.background_check_status||'—',a.background_check_status==='complete'?'var(--green)':'var(--yellow)')}${m('GBP',a.gbp_link_status||'—',a.gbp_link_status==='complete'?'var(--green)':'var(--yellow)')}</div>`;
+  if(a.job_types?.length)h+=`<div style="margin-bottom:12px"><div class="mm-k" style="margin-bottom:5px">Job Types (${a.job_types.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px">${a.job_types.map(j=>`<span class="chip cb">${j}</span>`).join('')}</div></div>`;
+  if(a.service_areas?.length)h+=`<div style="margin-bottom:12px"><div class="mm-k" style="margin-bottom:5px">Service Areas (${a.service_areas.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px">${a.service_areas.map(s=>`<span class="chip cb">${s}</span>`).join('')}</div></div>`;
+  if(a.ad_schedule)h+=`<div style="margin-bottom:12px"><div class="mm-k" style="margin-bottom:4px">Ad Schedule</div><div class="mono" style="font-size:12px">${a.ad_schedule}</div></div>`;
+  if((a.charged_leads||0)>0)h+=`<div style="margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)"><div class="mm-k" style="margin-bottom:6px">Performance</div><div class="mg">${m('Cost/Lead','$'+((a.lead_spent||0)/(a.charged_leads||1)).toFixed(2))}${m('Budget Util',a.weekly_budget?Math.round(((a.lead_spent||0)/(a.weekly_budget||1))*100)+'%':'—')}${m('Imp→Lead',a.ad_impressions?((a.charged_leads/(a.ad_impressions||1))*100).toFixed(3)+'%':'—')}</div></div>`;
+  if(a.compliance_issues?.length)h+=`<div style="margin-bottom:12px;padding:9px 11px;background:#fee2e2;border-radius:7px;border-left:3px solid var(--red)">${a.compliance_issues.map(c=>`<div style="font-size:11px;color:var(--red);margin-bottom:2px">✗ ${c.details}</div>`).join('')}</div>`;
+  if(a.wc_warnings?.length)h+=`<div style="margin-bottom:12px;padding:9px 11px;background:#fefce8;border-radius:7px;border-left:3px solid var(--yellow)">${a.wc_warnings.map(w=>`<div style="font-size:11px;color:#92400e">⚠ ${w}</div>`).join('')}</div>`;
+  h+=`<div><div class="mm-k" style="margin-bottom:5px">Notes</div><textarea class="nf" rows="3" style="width:100%" placeholder="Notes…" onchange="sNote('${a.lsa_customer_id}','${cPeriod.replace(/'/g,"\\'")}',this.value)">${notes[nk]||''}</textarea></div>`;
+  $('mbd').innerHTML=h;$('modal').classList.add('open');document.body.style.overflow='hidden';
+}
+function clModal(){$('modal').classList.remove('open');document.body.style.overflow='';}
+
+// ═══ MCC ACCOUNTS ═══
+async function mccPull(){
+  const btn=$('mcc-btn');btn.disabled=true;btn.textContent='Pulling…';$('mcc-status').textContent='Connecting to Google Ads API…';
+  try{
+    const r=await fetch('/api/mcc-accounts');const d=await r.json();
+    if(!r.ok||d.error)throw new Error(d.error||'Unknown error');
+    mccAccts=d.accounts||[];localStorage.setItem(MCC_KEY,JSON.stringify(mccAccts));
+    if(selected.size===0)mccAccts.forEach(a=>selected.add(a.id));saveSel();
+    $('mcc-status').textContent=mccAccts.length+' accounts loaded';$('mcc-status').style.color='var(--green)';
+    renSettings();
+  }catch(e){$('mcc-status').innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;}
+  finally{btn.disabled=false;btn.textContent='Pull from MCC';}
+}
+
+function renSettings(){
+  // Merge MCC accounts with report accounts
+  let accts=[...mccAccts];
+  if(cData?.accounts){for(const a of cData.accounts){if(!accts.find(x=>x.id===a.lsa_customer_id))accts.push({id:a.lsa_customer_id,name:a.display_name});}}
+  const grid=$('ag');
+  if(!accts.length){grid.innerHTML='<div class="empty" style="padding:24px;grid-column:1/-1">No accounts yet. Click "Pull from MCC" or generate a report first.</div>';return;}
+  grid.innerHTML=accts.map(a=>{const sel=selected.has(a.id)||selected.has(a.name);return`<div class="acct-item${sel?' sel':''}" onclick="tglAcct('${(a.id||'').replace(/'/g,"\\'")}','${(a.name||'').replace(/'/g,"\\'")}')"><input type="checkbox" ${sel?'checked':''} onclick="event.stopPropagation();tglAcct('${(a.id||'').replace(/'/g,"\\'")}','${(a.name||'').replace(/'/g,"\\'")}')"><div><div style="font-size:12px;font-weight:600">${a.name}</div><div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px">${a.id}</div></div></div>`;}).join('');
+}
+function tglAcct(id,name){const k=id||name;if(selected.has(k))selected.delete(k);else selected.add(k);saveSel();renSettings();}
+function selAll(v){const accts=[...mccAccts];if(cData?.accounts)for(const a of cData.accounts)if(!accts.find(x=>x.id===a.lsa_customer_id))accts.push({id:a.lsa_customer_id,name:a.display_name});if(v)accts.forEach(a=>selected.add(a.id||a.name));else selected.clear();saveSel();renSettings();}
+function saveSel(){localStorage.setItem(SEL_KEY,JSON.stringify([...selected]));}
+
+// ═══ ALERTS ═══
+function renAlerts(){
+  const accts=(cData?.accounts||[]).filter(a=>(a.compliance_issue_count||0)>0);
+  const el=$('al');
+  if(!accts.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--green)"><div style="font-size:24px;margin-bottom:6px">✓</div><div style="font-size:13px;font-weight:600">All accounts healthy!</div></div>';return;}
+  el.innerHTML=accts.sort((a,b)=>(b.compliance_issue_count||0)-(a.compliance_issue_count||0)).map(a=>`<div style="padding:12px 16px;border-radius:7px;border:1px solid ${(a.compliance_issue_count||0)>=3?'#fecaca':'#fde68a'};background:${(a.compliance_issue_count||0)>=3?'#fef2f2':'#fffbeb'};margin-bottom:8px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;font-weight:700">${a.display_name}</span><span class="chip ${(a.compliance_issue_count||0)>=3?'cr':'ca'}">${a.compliance_issue_count}</span></div><div style="display:flex;gap:5px;flex-wrap:wrap">${(a.compliance_issues||[]).map(i=>`<span class="chip ${i.details.includes('expired')||i.details.includes('Zero')||i.details.includes('Billing')?'cr':'ca'}">${i.details}</span>`).join('')}</div></div>`).join('');
+}
+
+// ═══ EXPORT ═══
+function doExport(){
+  if(!cData)return;
+  const h=['Account','LSA ID','Charged','Not Charged','WC Unique','WC Repeat','WC Total','Responsiveness%','Reviews','Rating','Budget','Lead Spent','Impressions','Top Imp%','AbsTop%','Insurance','Insurance Details','Billing','BG Check','GBP','Job Types','Photos','Message Lead','Ad Schedule','Service Areas','Issues','Notes'];
+  const notes=gNotes();const seen=new Set();
+  const rows=(cData.accounts||[]).filter(a=>{if(seen.has(a.lsa_customer_id))return false;seen.add(a.lsa_customer_id);return true;}).map(a=>{const nk=a.lsa_customer_id+'__'+cPeriod;return[`"${a.display_name}"`,a.lsa_customer_id,a.charged_leads??0,a.not_charged_leads??0,a.wc_unique_leads??0,a.wc_repeat_leads??0,a.wc_total_leads??0,a.phone_responsiveness??'',a.reviews_count??'',a.average_rating??'',a.weekly_budget??'',a.lead_spent??'',a.ad_impressions??'',a.top_impression_rate??'',a.abs_top_impression_rate??'',`"${a.insurance_status||''}"`,`"${a.insurance_details||''}"`,`"${a.billing_status||''}"`,`"${a.background_check_status||''}"`,`"${a.gbp_link_status||''}"`,`"${(a.job_types||[]).join('; ')}"`,a.photos??'',a.message_lead?'Enabled':'Disabled',`"${a.ad_schedule||''}"`,`"${(a.service_areas||[]).join('; ')}"`,a.compliance_issue_count||0,`"${(notes[nk]||'').replace(/"/g,'""')}"`].join(',');});
+  const csv=[h.join(','),...rows].join('\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='lsa-ops-'+cPeriod.replace(/ /g,'-')+'.csv';a.click();URL.revokeObjectURL(url);
+}
+
+function fCat(k){return(k||'').replace('xcat:service_area_business_','').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+</script>
+</body>
+</html>
