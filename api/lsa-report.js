@@ -8,8 +8,10 @@ export default async function handler(req, res) {
   try {
     const { start_date, end_date, assigned_to } = req.body;
 
-    // Get auth token — from env var or from request header
-    const token = process.env.LSA_BEARER_TOKEN || (req.headers.authorization || '').replace('Bearer ', '');
+    const token = process.env.LSA_BEARER_TOKEN;
+    if (!token) {
+      return res.status(500).json({ error: 'LSA_BEARER_TOKEN environment variable not set in Vercel' });
+    }
 
     const upstream = await fetch(
       'https://google-ads-onboarding-production.up.railway.app/api/lsa/report',
@@ -17,11 +19,15 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
           'Origin': 'https://pwmarketingpros-ads.vercel.app',
           'Referer': 'https://pwmarketingpros-ads.vercel.app/',
-          ...(token ? { 'Authorization': 'Bearer ' + token } : {})
         },
-        body: JSON.stringify({ start_date, end_date, assigned_to: assigned_to || null })
+        body: JSON.stringify({
+          start_date,
+          end_date,
+          assigned_to: assigned_to || null
+        })
       }
     );
 
