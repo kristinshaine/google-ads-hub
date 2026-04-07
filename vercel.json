@@ -9,6 +9,7 @@
     { "src": "/api/lsa-report", "dest": "/api/lsa-report.js" },
     { "src": "/api/mcc-accounts", "dest": "/api/mcc-accounts.js" },
     { "src": "/lsa", "dest": "/lsa.html" },
+    { "src": "/(.*\\..*)", "dest": "/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
